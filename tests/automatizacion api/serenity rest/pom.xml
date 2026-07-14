@@ -92,20 +92,6 @@
       <version>1.4.14</version>
       <scope>test</scope>
     </dependency>
-    <!-- Serenity Screenplay Playwright — UI E2E con Playwright -->
-    <dependency>
-      <groupId>net.serenity-bdd</groupId>
-      <artifactId>serenity-screenplay-playwright</artifactId>
-      <version>${serenity.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <!-- Serenity Screenplay WebDriver — actions Open, Click, Enter, Ensure -->
-    <dependency>
-      <groupId>net.serenity-bdd</groupId>
-      <artifactId>serenity-screenplay-webdriver</artifactId>
-      <version>${serenity.version}</version>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>
@@ -122,10 +108,6 @@
           <systemPropertyVariables>
             <serenity.env>${serenity.env}</serenity.env>
           </systemPropertyVariables>
-          <!-- Variables de entorno para Playwright en redes corporativas con proxy SSL -->
-          <environmentVariables>
-            <PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD>1</PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD>
-          </environmentVariables>
         </configuration>
       </plugin>
 
