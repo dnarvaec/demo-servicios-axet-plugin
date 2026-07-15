@@ -167,7 +167,9 @@ tests/Automatizacion api/serenity rest/
 
 ### 2.4 Flujo único de trabajo
 
-Cuando el usuario diga "automatiza X":
+#### Modo A — "Automatiza X" (endpoint directo)
+
+Cuando el usuario diga "automatiza X" refiriéndose a un endpoint o TX:
 
 1. Leer **§0 Contexto del Proyecto** → entender el dominio
 2. Inspeccionar el proyecto (§3.1)
@@ -176,6 +178,25 @@ Cuando el usuario diga "automatiza X":
 5. Añadir métodos `@When`/`@Then` al `{Recurso}StepDefinitions.java` existente (o crear si es recurso nuevo)
 6. Añadir scenario en `features/{recurso}/{recurso}.feature`
 7. Ejecutar `mvn verify` → verificar living documentation → entregar
+
+#### Modo B — "Automatiza la suite X" (desde Excel de casos de prueba)
+
+Cuando el usuario diga "automatiza la suite X" o "automatiza los casos de X":
+
+1. Leer **§0 Contexto del Proyecto** → entender el dominio
+2. Leer el archivo `casos de prueba/X.xlsx` usando Python + openpyxl (ver §9)
+3. Filtrar únicamente las filas donde `Tipo de test = Automatizado`
+4. Por cada caso filtrado, ejecutar el **Modo A** usando los datos de las columnas:
+   - `Resumen` → nombre del `Scenario:` en el `.feature`
+   - `Escenario` → línea `Given` del scenario Gherkin
+   - `Accion` → línea `When` + nombre de la Task a crear/reutilizar
+   - `Datos` → payload a registrar o reutilizar en `TestData.java`
+   - `Resultado Esperado` → línea `Then` + matcher HTTP status + JSON path
+5. Agrupar los scenarios por recurso/endpoint en el `.feature` correspondiente
+6. Ejecutar `mvn verify` → confirmar 100% de éxito
+7. Actualizar la columna `Resultado Final` del Excel: `Pass` o `Fail` según resultado
+8. Guardar el Excel actualizado en `casos de prueba/X.xlsx`
+9. Entregar reporte de ejecución + living documentation HTML
 
 ---
 
@@ -340,3 +361,93 @@ A partir de la respuesta real, construir los matchers REST Assured:
 ```
 
 ---
+
+## 9. Lectura de Suites desde Excel (Modo B)
+
+### 9.1 Comando para leer el Excel
+
+Cuando el usuario diga **"automatiza la suite X"**, ejecutar este script Python para extraer los casos:
+
+```python
+import openpyxl
+
+wb = openpyxl.load_workbook("casos de prueba/X.xlsx")
+ws = wb.active
+
+# Cabeceras esperadas (fila 1)
+# Issue ID | Tipo de test | Resumen | Descripcion | Escenario | Resultado Final | Accion | Datos | Resultado Esperado
+
+casos_automatizados = []
+for row in ws.iter_rows(min_row=2, values_only=True):
+    issue_id, tipo, resumen, descripcion, escenario, resultado_final, accion, datos, resultado_esperado = row
+    if tipo and tipo.strip().lower() == "automatizado":
+        casos_automatizados.append({
+            "id":                 issue_id,
+            "resumen":            resumen,
+            "descripcion":        descripcion,
+            "escenario":          escenario,
+            "accion":             accion,
+            "datos":              datos,
+            "resultado_esperado": resultado_esperado
+        })
+
+print(f"Casos a automatizar: {len(casos_automatizados)}")
+for c in casos_automatizados:
+    print(f"  [{c['id']}] {c['resumen']}")
+```
+
+### 9.2 Mapeo Excel → Gherkin
+
+Por cada caso `Automatizado` extraído, generar el siguiente bloque Gherkin:
+
+```gherkin
+Scenario: {Resumen}
+  Given {Escenario}
+  When  {Accion}
+  Then  {Resultado Esperado}
+```
+
+**Reglas de mapeo**:
+- Si `Accion` contiene el nombre de un endpoint ya cubierto → reutilizar la Task existente
+- Si `Datos` describe campos que no existen en `TestData.java` → añadir el builder correspondiente
+- Si `Resultado Esperado` contiene `HTTP XXX` → extraer el status code para el matcher `equalTo(XXX)`
+- Si `Resultado Esperado` contiene `campo "X" = "Y"` → añadir `.body("X", equalTo("Y"))` al matcher
+
+### 9.3 Actualización del Excel tras la ejecución
+
+Después de ejecutar `mvn verify`, actualizar la columna `Resultado Final`:
+
+```python
+import openpyxl
+
+wb = openpyxl.load_workbook("casos de prueba/X.xlsx")
+ws = wb.active
+
+# Columna 6 = Resultado Final
+# Mapear Issue ID → resultado obtenido de Serenity
+resultados = {
+    # issue_id: "Pass" | "Fail"
+}
+
+for row in ws.iter_rows(min_row=2):
+    issue_id = row[0].value
+    if issue_id in resultados:
+        row[5].value = resultados[issue_id]  # columna Resultado Final
+
+wb.save("casos de prueba/X.xlsx")
+print("Excel actualizado con resultados de ejecución.")
+```
+
+### 9.4 Checklist Modo B
+
+```
+[ ] casos de prueba/X.xlsx leído con openpyxl
+[ ] Casos filtrados: solo Tipo de test = "Automatizado"
+[ ] Cada caso mapeado a un Scenario: en el .feature correspondiente
+[ ] Tasks reutilizadas o creadas según árbol de decisión §3.2
+[ ] TestData.java actualizado con builders de los nuevos Datos
+[ ] mvn verify ejecutado — 100% de éxito
+[ ] Columna "Resultado Final" actualizada en el Excel (Pass/Fail)
+[ ] Excel guardado en casos de prueba/X.xlsx
+[ ] Living documentation HTML entregada
+```
