@@ -9,15 +9,39 @@ description: Agente especializado en automatizacion de pruebas de API REST usand
 > Una vez completada, el agente usará este contexto como referencia para todas sus acciones.
 
 ```
-NOMBRE DEL PROYECTO    : [TODO — nombre del proyecto/cliente]
-DESCRIPCION            : [TODO — descripción breve de qué hace la API]
-URL BASE API (DEV)     : [TODO — https://...] (actualizar también en serenity.conf y ApiEndpoints.java)
-URL BASE API (PROD)    : [TODO — https://...]
-AUTENTICACION          : [TODO — Bearer Token / API Key / Basic / Sin auth]
-FORMATO RESPUESTA      : [TODO — JSON / XML]
-DOCUMENTACION API      : [TODO — enlace a Swagger/OpenAPI/Postman si existe]
-MODULOS/RECURSOS       : [TODO — listar los recursos principales, ej: /users, /orders, /products]
-NOTAS ESPECIALES       : [TODO — cualquier particularidad de la API o del entorno]
+NOMBRE DEL PROYECTO    : Everest — Automatización API Grupo Aval
+DESCRIPCION            : API de transacciones bancarias ATM del proyecto Everest (Grupo Aval).
+                         Gestiona retiro de efectivo (OTP), depósitos, recaudo de convenios y
+                         pago de obligaciones / Tarjeta de Crédito Aval mediante endpoints REST.
+URL BASE API (DEV)     : https://api.aval.nttdataco.com  (actualizar también en serenity.conf y ApiEndpoints.java)
+URL BASE API (PROD)    : https://api.aval.nttdataco.com
+AUTENTICACION          : Bearer Token (header Authorization) + conjunto de headers de contexto bancario:
+                           X-Transaction-Id, X-RqUID, X-Channel, X-CompanyId, X-IPAddr,
+                           X-NextDt, X-ClientDt, X-CustIdentType, X-CustIdentNum,
+                           X-SessKey, X-Language, X-CustLoginId, X-IBM-Client-Id
+FORMATO RESPUESTA      : JSON
+DOCUMENTACION API      : Colección Postman "Everest Automatizacion" (4 requests)
+MODULOS/RECURSOS       :
+  TX-01  Retiro de efectivo (OTP)                    POST /api/v1/pagos/retiro
+                                                          X-RqUID incremental: 001001
+  TX-02  Depósitos y consignaciones (Efectivo)        POST /api/v1/pagos/deposito
+                                                          X-RqUID incremental: 002001
+  TX-03  Recaudo de convenios (Efectivo)              FLUJO DOS PASOS:
+                                                       1º POST /everest/orq/consultas/api/v1/consulta
+                                                       2º POST /api/v1/pagos/pago-factura
+                                                          X-RqUID incremental: 003001
+  TX-04  Pago de obligaciones y TC Aval (Efectivo)   FLUJO DOS PASOS (mismo que TX-03):
+                                                       1º POST /everest/orq/consultas/api/v1/consulta
+                                                       2º POST /api/v1/pagos/pago-factura
+                                                          X-RqUID incremental: 004001
+NOTAS ESPECIALES       :
+  - Estrategia incremental X-RqUID: retiro=001001 | deposito=002001 | recaudo=003001 | pago-oblig=004001
+  - TX-03 y TX-04 siguen el mismo flujo de dos pasos: consulta-factura → pago-factura
+  - El endpoint de consulta usa URL base distinta (/everest/orq/...) — definida en ApiEndpoints.Consultas
+  - Todos los endpoints son mocks; usar RestAssured.useRelaxedHTTPSValidation() (proxy NTT/corporativo)
+  - Header X-Channel típico: "ATM" para pagos, "CBV" para consultas
+  - Header X-CompanyId típico: "BANCO_BOGOTA" para pagos, "00010016" para consultas
+  - Body principal siempre lleva: "banco", "operacion" y el objeto de operación específico
 ```
 
 ## Tarjeta de Referencia Rápida

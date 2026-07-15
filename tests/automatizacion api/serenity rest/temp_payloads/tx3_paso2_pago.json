@@ -1,0 +1,40 @@
+{
+  "banco": "BANCO_BOGOTA",
+  "operacion": "PAGO_FACTURA",
+  "operacionobj": {
+    "NetwokInfo": {"NetworkOwner": "string", "NetworkRefId": "string"},
+    "Transaction": {
+      "TrnRqUID": "string",
+      "TrnSrc": "string",
+      "ClientDt": "string",
+      "RefInfo": [{"RefType": "Referencia4", "RefId": "000000000000000010002795130011"}],
+      "ApprovalId": "string",
+      "CurAmt": {"Amt": 10000.0, "CurCode": "170"},
+      "TerminalSequence": "string"
+    },
+    "Agreement": {
+      "NIE": "12053337612",
+      "Name": "ETB EMPRESA TELEFONOS BOGOTA",
+      "SPAdditionalId": "0",
+      "PmtCodServ": "string",
+      "AgrmId": "12053337612",
+      "InvoiceNum": "00007",
+      "ExpDt": "2020-06-25T17:09:51",
+      "CSPRefId": "string",
+      "DepAcctId": {"AcctId": "string"}
+    },
+    "TotalCurAmt": {"Amt": 10000.0, "CurCode": "170"},
+    "InvoiceSender": {
+      "AcctPayAcct": "1003214830",
+      "AgrmType": "1",
+      "SvcId": "0007",
+      "InvSndrPmtInfo": {"POSEntryMode": "010"}
+    },
+    "PSPCity": {"CityId": "11001"},
+    "LocationInfo": {"GeoLocation": "KR 11 # 71 -73"},
+    "AcctBal": [
+      {"CurAmt": {"Amt": 38020.00, "CurCode": "170"}, "Desc": "ValorPrincipal"},
+      {"CurAmt": {"Amt": 16520.00, "CurCode": "170"}, "Desc": "ValorAdicional1"}
+    ]
+  }
+}

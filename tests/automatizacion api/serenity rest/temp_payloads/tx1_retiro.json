@@ -1,0 +1,25 @@
+{
+  "banco": "BANCO_BOGOTA",
+  "operacion": "RETIRO",
+  "operacionobj": {
+    "NetworkTrnInfo": {
+      "NetworkOwner": "string",
+      "OriginatorName": "string",
+      "OriginatorType": "string",
+      "TerminalId": "string",
+      "NetworkRefId": "string",
+      "TeminalSequence": "string",
+      "IncocredCode": "string",
+      "PostAddr": {"Addr1": "string", "StateProv": "string"}
+    },
+    "PartyAcctRelInfo": {
+      "DepAcctIdFrom": {"DepAcctId": {"AcctType": "string", "AcctKey": "string", "BankInfo": {"BankId": "string"}}},
+      "CardAcctIdFrom": {"CardAcctId": {"AcctId": "string"}}
+    },
+    "DepAcctId": {"AcctType": "string", "AcctKey": "string", "BankInfo": {"BankId": "string"}},
+    "ContactInfo": {"PhoneNum": {"PhoneType": "string", "Phone": "string"}},
+    "CurAmt": {"Amt": 0, "CurCode": "string"},
+    "Fee": {"CurAmt": {"Amt": 0, "CurCode": "string"}},
+    "OTPInfo": {"OtpType": "string", "OtpValue": "string"}
+  }
+}

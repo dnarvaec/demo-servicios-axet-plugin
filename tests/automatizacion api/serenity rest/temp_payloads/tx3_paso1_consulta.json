@@ -1,0 +1,23 @@
+{
+  "banco": "bbogota",
+  "operacion": "CONSULTA_FACTURA",
+  "obj_operacion": {
+    "netwokInfo": {"networkOwner": "7946", "networkRefId": "7946"},
+    "transaction": {"trnRqUID": "7946", "trnSrc": "BMOB", "terminalSequence": "4594971"},
+    "agreement": {
+      "agrmId": "7946",
+      "invoiceNum": "4915110000",
+      "expDt": "2020-06-24T16:05:45.314",
+      "cSPRefId": "12",
+      "depAcctId": {"acctId": "*****4207", "acctType": "CCA"}
+    },
+    "invoiceSender": {
+      "acctPayAcct": "1003214830",
+      "svcId": "0007",
+      "invSndrPmtInfo": {"posEntryMode": "010"},
+      "agrmType": "1"
+    },
+    "pspCity": {"cityId": "11001"},
+    "locationInfo": {"geoLocation": "KR 11 # 71 -73"}
+  }
+}
