@@ -149,3 +149,6 @@ yarn.lock
 *.rej
 .gradle/
 build/
+
+# graphify-axet
+.graphify/
