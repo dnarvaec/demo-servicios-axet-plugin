@@ -10,7 +10,7 @@ NOMBRE DEL PROYECTO    : Everest — Automatización API Grupo Aval
 DESCRIPCION            : API de transacciones bancarias ATM del proyecto Everest (Grupo Aval).
                          Gestiona retiro de efectivo (OTP), depósitos, recaudo de convenios y
                          pago de obligaciones / Tarjeta de Crédito Aval mediante endpoints REST.
-URL BASE API           : https://api.aval.nttdataco.com
+URL BASE API           : https://api.aval.nttdatacolombia.com
 AUTENTICACION          : Bearer Token + headers de contexto bancario (X-RqUID, X-Channel, etc.)
 FORMATO RESPUESTA      : JSON
 MODULOS/RECURSOS       :
@@ -24,6 +24,30 @@ HERRAMIENTA DE AUTO    : Serenity BDD + REST Assured + Cucumber (Screenplay Patt
 RUTA DE AUTOMATIZACION : tests/automatizacion api/serenity rest/
 PLANTILLA EXCEL        : casos de prueba/plantilla_base.xlsx
 SALIDA DE CASOS        : casos de prueba/{nombre_suite}.xlsx
+
+CONFIGURACION BD       :
+  - Los scripts del proyecto deben incluir variables de configuración que apunten a una BD
+    (host, puerto, schema, usuario, contraseña), gestionadas de forma centralizada y
+    compartida por todas las TX sin necesidad de modificar los scripts individuales.
+  - El apuntamiento de la BD debe poder cambiarse desde esa configuración centralizada.
+  - ESTADO ACTUAL: la automatización NO consume base de datos directamente.
+    No existe integración real con BD en este momento.
+  - PROHIBIDO: No inventar consultas SQL, validaciones JDBC ni criterios de resultado
+    contra BD mientras no exista integración real configurada y activa en el proyecto.
+
+CODIGOS HTTP OFICIALES :  (catálogo definitivo del proyecto Everest — no reinterpretar)
+  200 = EXITOSA
+  204 = REVERSADA
+  100 = FALLIDA_NEGOCIO
+  300 = FALLIDA_TECNICA
+  600 = FALLIDA_ENTIDAD
+  700 = FALLIDA_GENERAL
+  900 = PENDIENTE
+  901 = TIMEOUT
+  Estos códigos son la FUENTE OFICIAL de validación del estado de la respuesta.
+  No deben normalizarse, sustituirse ni reinterpretarse por convenciones REST estándar.
+  Si la API responde con un código distinto al catálogo oficial, reportar la
+  inconsistencia al usuario — nunca corregirla automáticamente.
 ```
 
 ---
@@ -86,9 +110,12 @@ La plantilla se encuentra en `casos de prueba/plantilla_base.xlsx`.
   - Ejemplo: `[TX-01] Retiro OTP - OTP inválido`
 - **Accion**: describir en lenguaje natural + especificar `POST /endpoint` con headers mínimos
 - **Datos**: listar solo los campos variables; los campos fijos van en Escenario
-- **Resultado Esperado**: comenzar siempre con el HTTP status code
-  - Ejemplo: `HTTP 200 | campo "status" = "OK"`
-  - Ejemplo: `HTTP 400 | campo "error" no nulo`
+- **Resultado Esperado**: comenzar siempre con **un único** HTTP status code del catálogo oficial del proyecto Everest (ver §0 CODIGOS HTTP OFICIALES). No usar códigos REST estándar ni dejar múltiples códigos alternativos para un mismo caso.
+  - Ejemplo: `HTTP 200 (EXITOSA) | campo "status" no nulo`
+  - Ejemplo: `HTTP 100 (FALLIDA_NEGOCIO) | campo "error" presente`
+  - Ejemplo: `HTTP 300 (FALLIDA_TECNICA) | descripción del error presente`
+  - Ejemplo: `HTTP 204 (REVERSADA) | respuesta no nula`
+  - Si el código exacto no está confirmado por documentación funcional o por exploración en vivo: escribir `Pendiente de validación funcional` en lugar de múltiples códigos alternativos. Un caso con este valor **no debe automatizarse** hasta que el código sea confirmado.
 - **Resultado Final**: siempre `Pending` al crear; el agente de automatización lo actualiza
 
 ---
@@ -98,17 +125,17 @@ La plantilla se encuentra en `casos de prueba/plantilla_base.xlsx`.
 Por cada endpoint/flujo, generar OBLIGATORIAMENTE las siguientes categorías:
 
 ### 3.1 Happy Path (Flujo exitoso)
-- Caso con datos válidos completos → esperar HTTP 200/201
+- Caso con datos válidos completos → documentar **un único** código del catálogo oficial según el tipo de operación: **HTTP 200 (EXITOSA)** para transacciones completadas, **HTTP 204 (REVERSADA)** para operaciones de reverso. Cada caso lleva un solo código; si el tipo de respuesta no está confirmado, dejar `Pendiente de validación funcional`. No asumir 201 ni otros códigos REST estándar.
 - Si hay flujo de dos pasos (TX-03/TX-04): generar un caso por cada paso Y un caso del flujo completo
 
 ### 3.2 Validación de campos obligatorios
-- Un caso por cada campo requerido del body → enviar sin ese campo → esperar HTTP 400/422
+- Un caso por cada campo requerido del body → enviar sin ese campo → documentar el código esperado **según lo confirme la documentación funcional o la exploración en vivo**. No asumir 400 ni 422; el código correcto debe pertenecer al catálogo oficial (ver §0). Si no está confirmado, dejar `Pendiente de validación funcional`.
 - Campos mínimos a cubrir: `banco`, `operacion`, y el objeto principal de operación
 
 ### 3.3 Validación de headers
-- Caso sin header `X-RqUID` → esperar HTTP 400/401
-- Caso sin header `Authorization` (si aplica) → esperar HTTP 401
-- Caso con `X-Channel` inválido → esperar HTTP 400/422
+- Caso sin header `X-RqUID` → documentar el código esperado **según lo confirme la exploración en vivo**; usar el valor del catálogo oficial confirmado o dejar `Pendiente de validación funcional`
+- Caso sin header `Authorization` (si aplica) → documentar el código esperado **según lo confirme la exploración en vivo**; usar el valor del catálogo oficial confirmado o dejar `Pendiente de validación funcional`
+- Caso con `X-Channel` inválido → documentar el código esperado **según lo confirme la exploración en vivo**; usar el valor del catálogo oficial confirmado o dejar `Pendiente de validación funcional`
 
 ### 3.4 Casos negativos de negocio
 - Monto inválido (negativo, cero, no numérico)
@@ -244,14 +271,14 @@ Dado el contexto: *"Diseña casos de prueba para TX-01 Retiro de efectivo OTP"*
 
 | Issue ID | Tipo de test | Resumen | Descripcion | Escenario | Resultado Final | Accion | Datos | Resultado Esperado |
 |---|---|---|---|---|---|---|---|---|
-| 1 | Automatizado | [TX-01] Retiro OTP - Solicitud exitosa | Verificar que el endpoint procesa correctamente un retiro con OTP válido | El actor tiene credenciales válidas y OTP activo | Pending | POST /api/v1/pagos/retiro con headers X-RqUID=001001, X-Channel=ATM | banco=BANCO_BOGOTA, operacion=RETIRO, OtpType=string, OtpValue=string, Amt=0 | HTTP 200 o 201 \| respuesta no nula |
-| 2 | Automatizado | [TX-01] Retiro OTP - Sin header X-RqUID | Verificar que el endpoint rechaza la petición cuando falta X-RqUID | El actor no incluye el header X-RqUID en la petición | Pending | POST /api/v1/pagos/retiro sin header X-RqUID | banco=BANCO_BOGOTA, operacion=RETIRO, payload completo | HTTP 400 o 401 \| mensaje de error en respuesta |
-| 3 | Automatizado | [TX-01] Retiro OTP - OTP vacío | Verificar que se rechaza un OTP con valor vacío | El actor envía OtpValue vacío | Pending | POST /api/v1/pagos/retiro con OtpValue="" | banco=BANCO_BOGOTA, operacion=RETIRO, OtpValue="" | HTTP 400 o 422 \| campo de error presente |
-| 4 | Automatizado | [TX-01] Retiro OTP - Payload vacío | Verificar que se rechaza un body vacío | El actor envía body {} | Pending | POST /api/v1/pagos/retiro con body {} | {} | HTTP 400 \| mensaje de error |
-| 5 | Automatizado | [TX-01] Retiro OTP - Sin campo banco | Verificar que el campo banco es obligatorio | Payload sin campo banco | Pending | POST /api/v1/pagos/retiro sin campo "banco" | operacion=RETIRO, operacionobj completo, sin banco | HTTP 400 o 422 |
-| 6 | Manual | [TX-01] Retiro OTP - OTP expirado | Verificar el comportamiento cuando el OTP ha caducado | OTP real generado y expirado | Pending | POST /api/v1/pagos/retiro con OTP expirado real | OTP caducado de dispositivo físico | HTTP 400 o 422 \| mensaje "OTP expirado" |
-| 7 | Automatizado | [TX-01] Retiro OTP - Monto cero | Verificar comportamiento con monto = 0 | El actor envía Amt=0 | Pending | POST /api/v1/pagos/retiro con CurAmt.Amt=0 | banco=BANCO_BOGOTA, CurAmt.Amt=0 | HTTP 200 o 400 según regla de negocio |
-| 8 | Automatizado | [TX-01] Retiro OTP - Monto negativo | Verificar que se rechaza un monto negativo | El actor envía Amt=-100 | Pending | POST /api/v1/pagos/retiro con CurAmt.Amt=-100 | banco=BANCO_BOGOTA, CurAmt.Amt=-100 | HTTP 400 o 422 |
+| 1 | Automatizado | [TX-01] Retiro OTP - Solicitud exitosa | Verificar que el endpoint procesa correctamente un retiro con OTP válido | El actor tiene credenciales válidas y OTP activo | Pending | POST /api/v1/pagos/retiro con headers X-RqUID=001001, X-Channel=ATM | banco=BANCO_BOGOTA, operacion=RETIRO, OtpType=string, OtpValue=string, Amt=0 | HTTP 200 (EXITOSA) \| respuesta no nula |
+| 2 | Automatizado | [TX-01] Retiro OTP - Sin header X-RqUID | Verificar que el endpoint rechaza la petición cuando falta X-RqUID | El actor no incluye el header X-RqUID en la petición | Pending | POST /api/v1/pagos/retiro sin header X-RqUID | banco=BANCO_BOGOTA, operacion=RETIRO, payload completo | Pendiente de validación funcional |
+| 3 | Automatizado | [TX-01] Retiro OTP - OTP vacío | Verificar que se rechaza un OTP con valor vacío | El actor envía OtpValue vacío | Pending | POST /api/v1/pagos/retiro con OtpValue="" | banco=BANCO_BOGOTA, operacion=RETIRO, OtpValue="" | HTTP 100 (FALLIDA_NEGOCIO) \| campo de error presente |
+| 4 | Automatizado | [TX-01] Retiro OTP - Payload vacío | Verificar que se rechaza un body vacío | El actor envía body {} | Pending | POST /api/v1/pagos/retiro con body {} | {} | Pendiente de validación funcional |
+| 5 | Automatizado | [TX-01] Retiro OTP - Sin campo banco | Verificar que el campo banco es obligatorio | Payload sin campo banco | Pending | POST /api/v1/pagos/retiro sin campo "banco" | operacion=RETIRO, operacionobj completo, sin banco | Pendiente de validación funcional |
+| 6 | Manual | [TX-01] Retiro OTP - OTP expirado | Verificar el comportamiento cuando el OTP ha caducado | OTP real generado y expirado | Pending | POST /api/v1/pagos/retiro con OTP expirado real | OTP caducado de dispositivo físico | HTTP 100 (FALLIDA_NEGOCIO) \| mensaje de OTP expirado |
+| 7 | Automatizado | [TX-01] Retiro OTP - Monto cero | Verificar comportamiento con monto = 0 | El actor envía Amt=0 | Pending | POST /api/v1/pagos/retiro con CurAmt.Amt=0 | banco=BANCO_BOGOTA, CurAmt.Amt=0 | Pendiente de validación funcional |
+| 8 | Automatizado | [TX-01] Retiro OTP - Monto negativo | Verificar que se rechaza un monto negativo | El actor envía Amt=-100 | Pending | POST /api/v1/pagos/retiro con CurAmt.Amt=-100 | banco=BANCO_BOGOTA, CurAmt.Amt=-100 | Pendiente de validación funcional |
 
 El archivo generado se guarda en `casos de prueba/retiro_otp.xlsx`.
 
@@ -265,7 +292,8 @@ El archivo generado se guarda en `casos de prueba/retiro_otp.xlsx`.
 [ ] ¿Los headers críticos (X-RqUID, Authorization) tienen casos negativos?
 [ ] ¿Los flujos de dos pasos (TX-03/TX-04) tienen casos del flujo completo?
 [ ] ¿Todos los casos "Automatizado" son expresables en Gherkin?
-[ ] ¿El Resultado Esperado incluye siempre el HTTP status code?
+[ ] ¿El Resultado Esperado incluye siempre el HTTP status code del catálogo oficial del proyecto Everest (§0 CODIGOS HTTP OFICIALES)?
+[ ] ¿Los códigos HTTP usados en "Resultado Esperado" pertenecen al catálogo oficial (200/204/100/300/600/700/900/901)?
 [ ] ¿Los Issue ID son únicos y secuenciales?
 [ ] ¿El archivo se guardó en casos de prueba/{nombre_suite}.xlsx?
 [ ] ¿Se presentó el resumen de cobertura al usuario?

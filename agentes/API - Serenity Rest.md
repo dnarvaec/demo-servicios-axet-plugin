@@ -13,8 +13,8 @@ NOMBRE DEL PROYECTO    : Everest — Automatización API Grupo Aval
 DESCRIPCION            : API de transacciones bancarias ATM del proyecto Everest (Grupo Aval).
                          Gestiona retiro de efectivo (OTP), depósitos, recaudo de convenios y
                          pago de obligaciones / Tarjeta de Crédito Aval mediante endpoints REST.
-URL BASE API (DEV)     : https://api.aval.nttdataco.com  (actualizar también en serenity.conf y ApiEndpoints.java)
-URL BASE API (PROD)    : https://api.aval.nttdataco.com
+URL BASE API (DEV)     : https://api.aval.nttdatacolombia.com  (actualizar también en serenity.conf y ApiEndpoints.java)
+URL BASE API (PROD)    : https://api.aval.nttdatacolombia.com
 AUTENTICACION          : Bearer Token (header Authorization) + conjunto de headers de contexto bancario:
                            X-Transaction-Id, X-RqUID, X-Channel, X-CompanyId, X-IPAddr,
                            X-NextDt, X-ClientDt, X-CustIdentType, X-CustIdentNum,
@@ -42,6 +42,31 @@ NOTAS ESPECIALES       :
   - Header X-Channel típico: "ATM" para pagos, "CBV" para consultas
   - Header X-CompanyId típico: "BANCO_BOGOTA" para pagos, "00010016" para consultas
   - Body principal siempre lleva: "banco", "operacion" y el objeto de operación específico
+
+CONFIGURACION BD       :
+  - Los scripts del proyecto deben incluir variables de configuración que apunten a una BD
+    (host, puerto, schema, usuario, contraseña), definidas en DatabaseConfig.java o en
+    serenity.conf, bajo una sección centralizada y compartida por todas las TX.
+  - El apuntamiento de la BD debe poder cambiarse desde esa configuración centralizada
+    sin necesidad de modificar los scripts individuales de cada transacción.
+  - ESTADO ACTUAL: la automatización NO consume base de datos directamente.
+    No existe integración real con BD en este momento.
+  - PROHIBIDO: No inventar consultas SQL, validaciones JDBC ni aserciones contra BD
+    mientras no exista integración real configurada y activa en el proyecto.
+
+CODIGOS HTTP OFICIALES :  (catálogo definitivo del proyecto Everest — no reinterpretar)
+  200 = EXITOSA
+  204 = REVERSADA
+  100 = FALLIDA_NEGOCIO
+  300 = FALLIDA_TECNICA
+  600 = FALLIDA_ENTIDAD
+  700 = FALLIDA_GENERAL
+  900 = PENDIENTE
+  901 = TIMEOUT
+  Estos códigos son la FUENTE OFICIAL de validación del estado de la respuesta.
+  No deben normalizarse, sustituirse ni reinterpretarse por convenciones REST estándar.
+  Si la API responde con un código distinto al catálogo oficial, DETENTE y reporta la
+  inconsistencia al usuario — nunca la corrijas automáticamente.
 ```
 
 ## Tarjeta de Referencia Rápida
@@ -314,6 +339,26 @@ Todos los archivos son **aditivos**: solo se añade al final, nunca se modifica 
 - **Siempre `mvn verify`**: Con `mvn test` el reporte HTML no se genera.
 - **Acentos en step defs**: Usar escape Unicode en anotaciones Java (`\u00ed` para `í`, `\u00f3` para `ó`).
 
+### 5.5 Códigos HTTP oficiales del proyecto Everest
+
+Los únicos códigos HTTP válidos para validar el estado de las respuestas son los definidos en el §0 (CODIGOS HTTP OFICIALES):
+
+| Código | Estado oficial  |
+|--------|-----------------|
+| 200    | EXITOSA         |
+| 204    | REVERSADA       |
+| 100    | FALLIDA_NEGOCIO |
+| 300    | FALLIDA_TECNICA |
+| 600    | FALLIDA_ENTIDAD |
+| 700    | FALLIDA_GENERAL |
+| 900    | PENDIENTE       |
+| 901    | TIMEOUT         |
+
+**Reglas de aplicación**:
+- Estos códigos son la **fuente oficial** de validación; no deben normalizarse ni sustituirse por convenciones REST estándar (ej: no asumir que 404 = "no encontrado" o que 500 = "error interno" si el proyecto define sus propios valores).
+- Los matchers `.statusCode(XXX)` en Serenity/REST Assured deben referenciar exclusivamente estos valores.
+- Si durante la exploración en vivo (`curl.exe`) o la ejecución de pruebas la API responde con un código **fuera de este catálogo**, el agente debe **DETENERSE** y reportar la inconsistencia al usuario en lugar de corregirla o normalizarla automáticamente.
+
 ---
 
 ## 6. Modos de ejecución
@@ -350,12 +395,13 @@ curl.exe -s -X GET "<api.baseUrl>/recurso" -H "Authorization: Bearer <token>" -H
 ```
 
 Documenta: URL completa, método HTTP, headers enviados, body de la petición, respuesta completa y código de estado.
+**Coteja el código de estado recibido contra el catálogo oficial del §0 (CODIGOS HTTP OFICIALES). Si el código recibido no figura en ese catálogo, DETENTE y reporta la inconsistencia al usuario antes de continuar.**
 
-A partir de la respuesta real, construir los matchers REST Assured:
+A partir de la respuesta real, construir los matchers REST Assured usando exclusivamente los códigos del catálogo oficial del proyecto Everest:
 
 ```java
 .then()
-    .statusCode(200)
+    .statusCode(200)   // 200 = EXITOSA según catálogo oficial Everest
     .body("id",    equalTo(1))
     .body("title", notNullValue());
 ```
@@ -410,7 +456,7 @@ Scenario: {Resumen}
 **Reglas de mapeo**:
 - Si `Accion` contiene el nombre de un endpoint ya cubierto → reutilizar la Task existente
 - Si `Datos` describe campos que no existen en `TestData.java` → añadir el builder correspondiente
-- Si `Resultado Esperado` contiene `HTTP XXX` → extraer el status code para el matcher `equalTo(XXX)`
+- Si `Resultado Esperado` contiene `HTTP XXX` → extraer el status code para el matcher `equalTo(XXX)`. El valor XXX debe corresponder al catálogo oficial del proyecto Everest (ver §0 CODIGOS HTTP OFICIALES). Si el Excel contiene un código fuera del catálogo, reportar la inconsistencia al usuario antes de generar el código.
 - Si `Resultado Esperado` contiene `campo "X" = "Y"` → añadir `.body("X", equalTo("Y"))` al matcher
 
 ### 9.3 Actualización del Excel tras la ejecución

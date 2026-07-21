@@ -7,7 +7,7 @@ package serenityrest.utils;
  * NUNCA hardcodear URLs en Tasks, Interactions ni Step Definitions.
  *
  * PROYECTO : Everest — Automatización API Grupo Aval
- * HOST     : https://api.aval.nttdataco.com
+ * HOST     : https://api.aval.nttdatacolombia.com
  *
  * Transacciones cubiertas:
  *   TX-01  Retiro de efectivo (OTP)               X-RqUID: 001001
@@ -15,9 +15,12 @@ package serenityrest.utils;
  *   TX-03  Recaudo de convenios (Efectivo)          X-RqUID: 003001
  *   TX-04  Pago de obligaciones y TC Aval (Efect.) X-RqUID: 004001
  *
- * Flujo TX-03 y TX-04 (dos pasos):
+ * Flujo TX-03 (dos pasos):
  *   1º Consultas.CONSULTA_FACTURA  (orquestador)
  *   2º Pagos.PAGO_FACTURA
+ *
+ * Flujo TX-04 (un paso directo):
+ *   Pagos.PAGO_OBLIGACIONES
  * ─────────────────────────────────────────────────────────────────────────────
  */
 public final class ApiEndpoints {
@@ -25,39 +28,45 @@ public final class ApiEndpoints {
     private ApiEndpoints() {}
 
     // ── URL base — host compartido de todos los endpoints Everest/Aval ────────
-    public static final String API_BASE_URL = "https://api.aval.nttdataco.com";
+    public static final String API_BASE_URL = "https://api.aval.nttdatacolombia.com";
 
     // ── Pagos — endpoints bajo /api/v1/pagos/ ─────────────────────────────────
     /**
-     * Agrupa los paths del módulo de pagos (TX-01, TX-02, TX-03 paso 2, TX-04 paso 2).
+     * Agrupa los paths del módulo de pagos (TX-01, TX-02, TX-03 paso 2, TX-04 directo).
      * Los paths son relativos a API_BASE_URL.
      */
     public static final class Pagos {
         /** TX-01 — Retiro de efectivo con OTP.
-         *  POST https://api.aval.nttdataco.com/api/v1/pagos/retiro
+         *  POST https://api.aval.nttdatacolombia.com/api/v1/pagos/retiro
          *  X-RqUID incremental: 001001 */
         public static final String RETIRO        = "/api/v1/pagos/retiro";
 
         /** TX-02 — Depósitos y consignaciones (Efectivo).
-         *  POST https://api.aval.nttdataco.com/api/v1/pagos/deposito
+         *  POST https://api.aval.nttdatacolombia.com/api/v1/pagos/deposito
          *  X-RqUID incremental: 002001 */
         public static final String DEPOSITO      = "/api/v1/pagos/deposito";
 
-        /** TX-03 paso 2 / TX-04 paso 2 — Pago de factura / convenios / TC Aval.
-         *  POST https://api.aval.nttdataco.com/api/v1/pagos/pago-factura
-         *  X-RqUID incremental: 003001 (recaudo) | 004001 (pago oblig.) */
-        public static final String PAGO_FACTURA  = "/api/v1/pagos/pago-factura";
+        /** TX-03 paso 2 — Pago de factura / convenios (Efectivo).
+         *  POST https://api.aval.nttdatacolombia.com/api/v1/pagos/pago-factura
+         *  X-RqUID incremental: 003001 (recaudo) */
+        public static final String PAGO_FACTURA      = "/api/v1/pagos/pago-factura";
+
+        /** TX-04 — Pago de obligaciones y TC Aval (Efectivo).
+         *  POST https://api.aval.nttdatacolombia.com/api/v1/pagos/pago-obligaciones
+         *  X-RqUID incremental: 004001 */
+        public static final String PAGO_OBLIGACIONES = "/api/v1/pagos/pago-obligaciones";
     }
 
     // ── Consultas — endpoint orquestador bajo /everest/orq/consultas/ ─────────
     /**
-     * Agrupa los paths del módulo de consultas (TX-03 paso 1, TX-04 paso 1).
+     * Agrupa los paths del módulo de consultas (TX-03 paso 1 únicamente).
      * Los paths son relativos a API_BASE_URL.
+     * TX-04 NO usa este endpoint — es un endpoint directo: Pagos.PAGO_OBLIGACIONES.
      */
     public static final class Consultas {
-        /** TX-03 paso 1 / TX-04 paso 1 — Consulta de factura (orquestador Everest).
-         *  POST https://api.aval.nttdataco.com/everest/orq/consultas/api/v1/consulta
-         *  Se ejecuta SIEMPRE antes de Pagos.PAGO_FACTURA. */
+        /** TX-03 paso 1 — Consulta de factura (orquestador Everest).
+         *  POST https://api.aval.nttdatacolombia.com/everest/orq/consultas/api/v1/consulta
+         *  Se ejecuta SIEMPRE antes de Pagos.PAGO_FACTURA en el flujo TX-03. */
         public static final String CONSULTA_FACTURA = "/everest/orq/consultas/api/v1/consulta";
     }
 

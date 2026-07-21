@@ -13,8 +13,7 @@ import java.util.Map;
  * TX-02  depositoPayload()        POST /api/v1/pagos/deposito         X-RqUID: 002001
  * TX-03  consultaFacturaPayload() POST /everest/orq/.../consulta      X-RqUID: 003001 (paso 1)
  *        pagoFacturaPayload()     POST /api/v1/pagos/pago-factura     X-RqUID: 003001 (paso 2)
- * TX-04  consultaFacturaPayload() POST /everest/orq/.../consulta      X-RqUID: 004001 (paso 1)
- *        pagoObligacionPayload()  POST /api/v1/pagos/pago-factura     X-RqUID: 004001 (paso 2)
+ * TX-04  pagoObligacionPayload()  POST /api/v1/pagos/pago-obligaciones X-RqUID: 004001
  */
 public final class TestData {
 
@@ -146,12 +145,13 @@ public final class TestData {
     }
 
     // =========================================================================
-    // TX-03/TX-04 Paso 1 — Consulta factura (orquestador Everest)
-    // Ejecutar SIEMPRE antes de pagoFacturaPayload() o pagoObligacionPayload()
+    // TX-03 Paso 1 — Consulta factura (orquestador Everest)
+    // Ejecutar SIEMPRE antes de pagoFacturaPayload() en el flujo TX-03.
+    // TX-04 es endpoint directo y NO utiliza este paso.
     // =========================================================================
 
     /**
-     * @param xRqUID  "003001" para TX-03 (recaudo) | "004001" para TX-04 (pago oblig.)
+     * @param xRqUID  "003001" para TX-03 (recaudo)
      */
     public static Map<String, String> consultaFacturaHeaders(String xRqUID) {
         return strMap(
@@ -214,23 +214,55 @@ public final class TestData {
     }
 
     // =========================================================================
-    // TX-04 Paso 2 — Pago de obligaciones y Tarjeta de Crédito Aval (Efectivo)
+    // TX-04 — Pago de obligaciones y Tarjeta de Crédito Aval (Efectivo)
+    // Endpoint: POST /api/v1/pagos/pago-obligaciones
+    // X-RqUID: 004001 | Payload validado en prueba manual (responde HTTP 200)
     // =========================================================================
 
     public static Map<String, String> pagoObligacionHeaders() {
         return strMap(
-            "Content-Type",     "application/json",
-            "X-Transaction-Id", "78789",
-            "X-RqUID",          "004001",
-            "X-Channel",        "ATM",
-            "X-CompanyId",      "BANCO_BOGOTA",
-            "X-IPAddr",         "192.168.0.10",
-            "X-NextDt",         "2026-07-14T11:36:00-05"
+            "Content-Type",       "application/json",
+            "X-Transaction-Id",   "1234567890",
+            "X-RqUID",            "004001",
+            "X-Channel",          "ATM",
+            "X-CompanyId",        "BANCO_BOGOTA",
+            "X-IPAddr",           "192.168.0.10",
+            "X-NextDt",           "2026-07-14T11:36:00-05",
+            "X-IdentSerialNum",   "123456789",
+            "X-GovIssueIdentType","CC",
+            "X-ClientDt",         "2026-07-14T11:36:00-05"
         );
     }
 
     public static Map<String, Object> pagoObligacionPayload() {
-        return buildPagoFacturaBody("PAGO_OBLIGACION");
+        Map<String, Object> networkTrnInfo = map(
+            "OriginatorName",  "BMOB",
+            "OriginatorType",  "021",
+            "TerminalId",      "00BOG138",
+            "NetworkRefId",    "7946",
+            "TeminalSequence", "6032",
+            "PostAddr",        map("Addr1", "Direccion", "StateProv", "2302")
+        );
+
+        Map<String, Object> loanPmtInfo = map(
+            "DepAcctIdFrom",     map("DepAcctId", map(
+                                     "AcctType", "DDA",
+                                     "AcctKey",  "4915110205551818=23121011339517000000")),
+            "DepAcctIdTo",       map("DepAcctId", map(
+                                     "AcctId",   "200000100000900591657949",
+                                     "BankInfo", map("BankId", "00010016"))),
+            "CurAmt",            map("Amt", 20000.00, "CurCode", "COP"),
+            "LoanPmtType",       "CCA",
+            "LoanPmtComplement", "7946",
+            "CardAcctIdFrom",    map("CardAcctId", map("AcctId", "4915110205551818"))
+        );
+
+        Map<String, Object> operacionobj = map(
+            "NetworkTrnInfo", networkTrnInfo,
+            "LoanPmtInfo",    loanPmtInfo
+        );
+
+        return map("banco", "BANCO_BOGOTA", "operacion", "PAGO_OBLIGACIONES", "operacionobj", operacionobj);
     }
 
     // ── Builder compartido para pago-factura ──────────────────────────────────
