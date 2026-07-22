@@ -45,7 +45,7 @@ public class ConsultarFactura implements Task {
             Post.to(ApiEndpoints.Consultas.CONSULTA_FACTURA)
                 .with(requestSpec -> requestSpec
                     .headers(TestData.consultaFacturaHeaders(xRqUID))
-                    .body(TestData.consultaFacturaPayload()))
+                    .body(TestData.consultaFacturaPayload(xRqUID)))
         );
     }
 }

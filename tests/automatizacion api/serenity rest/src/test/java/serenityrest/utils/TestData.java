@@ -170,6 +170,10 @@ public final class TestData {
     }
 
     public static Map<String, Object> consultaFacturaPayload() {
+        return consultaFacturaPayload("7946");
+    }
+
+    public static Map<String, Object> consultaFacturaPayload(String trnRqUID) {
         Map<String, Object> agreement = map(
             "agrmId",     "7946",
             "invoiceNum", "491511***************************0000",
@@ -185,7 +189,7 @@ public final class TestData {
         );
         Map<String, Object> objOperacion = new HashMap<>();
         objOperacion.put("netwokInfo",    map("networkOwner", "7946", "networkRefId", "7946"));
-        objOperacion.put("transaction",   map("trnRqUID", "7946", "trnSrc", "BMOB", "terminalSequence", "4594971"));
+        objOperacion.put("transaction",   map("trnRqUID", trnRqUID, "trnSrc", "BMOB", "terminalSequence", "4594971"));
         objOperacion.put("agreement",     agreement);
         objOperacion.put("invoiceSender", invoiceSender);
         objOperacion.put("pspCity",       map("cityId", "11001"));

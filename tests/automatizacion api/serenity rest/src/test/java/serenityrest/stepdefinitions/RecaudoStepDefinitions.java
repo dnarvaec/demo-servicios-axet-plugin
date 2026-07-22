@@ -65,6 +65,16 @@ public class RecaudoStepDefinitions {
         );
     }
 
+    @Cuando("consulta la factura del convenio TX-03 con trnRqUID {string}")
+    public void consultaLaFacturaDelConvenioConTrnRqUID(String trnRqUID) {
+        actor.attemptsTo(
+            Post.to(ApiEndpoints.Consultas.CONSULTA_FACTURA)
+                .with(requestSpec -> requestSpec
+                    .headers(TestData.consultaFacturaHeaders("003001"))
+                    .body(TestData.consultaFacturaPayload(trnRqUID)))
+        );
+    }
+
     // ── Cuando — Paso 2: Pago ─────────────────────────────────────────────────
 
     @Cuando("realiza el pago de la factura del convenio")
@@ -90,6 +100,28 @@ public class RecaudoStepDefinitions {
             "msgRsHdr.status.statusCode debe ser " + codigoEsperado,
             actor.asksFor(TheResponse.fieldAsString("msgRsHdr.status.statusCode")),
             equalTo(codigoEsperado)
+        );
+    }
+
+    @Entonces("la consulta no happy path retorna status code {string} y estado corporativo {string}")
+    public void laConsultaNoHappyPathRetornaStatusCodeYEstadoCorporativo(
+        String statusCodeEsperado,
+        String estadoCorporativoEsperado
+    ) {
+        assertThat(
+            "HTTP status code debe ser 200",
+            actor.asksFor(TheResponse.statusCode()),
+            equalTo(200)
+        );
+        assertThat(
+            "msgRsHdr.status.statusCode debe ser " + statusCodeEsperado,
+            actor.asksFor(TheResponse.fieldAsString("msgRsHdr.status.statusCode")),
+            equalTo(statusCodeEsperado)
+        );
+        assertThat(
+            "msgRsHdr.status.statusDesc debe ser " + estadoCorporativoEsperado,
+            actor.asksFor(TheResponse.fieldAsString("msgRsHdr.status.statusDesc")),
+            equalTo(estadoCorporativoEsperado)
         );
     }
 

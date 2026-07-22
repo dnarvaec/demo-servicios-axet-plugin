@@ -2,6 +2,7 @@ package serenityrest.stepdefinitions;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
@@ -64,6 +65,47 @@ public class PagoObligacionStepDefinitions {
     }
 
     // ── Entonces ─────────────────────────────────────────────────────────────
+
+    @Entonces("la transacción de pago de obligación es exitosa con código {string}")
+    public void laTransaccionDePagoDeObligacionEsExitosa(String codigoEsperado) {
+        assertThat(
+            "HTTP status code debe ser 200",
+            actor.asksFor(TheResponse.statusCode()),
+            equalTo(200)
+        );
+        assertThat(
+            "msgRsHdr.status.statusCode debe ser " + codigoEsperado,
+            actor.asksFor(TheResponse.fieldAsString("msgRsHdr.status.statusCode")),
+            equalTo(codigoEsperado)
+        );
+    }
+
+    @Entonces("la severidad del pago de obligación es {string}")
+    public void laSeveridadDelPagoDeObligacionEs(String severidadEsperada) {
+        assertThat(
+            "msgRsHdr.status.severity debe ser " + severidadEsperada,
+            actor.asksFor(TheResponse.fieldAsString("msgRsHdr.status.severity")),
+            equalTo(severidadEsperada)
+        );
+    }
+
+    @Entonces("la descripción del pago de obligación es {string}")
+    public void laDescripcionDelPagoDeObligacionEs(String descripcionEsperada) {
+        assertThat(
+            "msgRsHdr.status.statusDesc debe ser " + descripcionEsperada,
+            actor.asksFor(TheResponse.fieldAsString("msgRsHdr.status.statusDesc")),
+            equalTo(descripcionEsperada)
+        );
+    }
+
+    @Entonces("el campo endDt del pago de obligación está presente")
+    public void elCampoEndDtDelPagoDeObligacionEstaPresente() {
+        assertThat(
+            "endDt debe estar presente en la respuesta",
+            actor.asksFor(TheResponse.fieldIsNotNull("endDt")),
+            is(true)
+        );
+    }
 
     @Entonces("el pago de obligaci\u00f3n es exitoso con HTTP {int}")
     public void elPagoDeObligacionEsExitosoConHttp(int codigoEsperado) {

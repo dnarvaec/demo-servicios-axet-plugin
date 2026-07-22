@@ -49,3 +49,18 @@ Característica: TX-03 Recaudo de convenios en efectivo
     Y la severidad del recaudo es "Info"
     Y la descripción del recaudo es "Transaccion exitosa"
     Y el campo endDt del recaudo está presente
+
+  @e2e @no-happy-path @outline
+  Esquema del escenario: TX-03 No happy path - consulta con trnRqUID MOCK-x
+    Cuando consulta la factura del convenio TX-03 con trnRqUID "<trnRqUID>"
+    Entonces la consulta no happy path retorna status code "<statusCode>" y estado corporativo "<estadoCorporativo>"
+
+    Ejemplos:
+      | trnRqUID | statusCode | estadoCorporativo |
+      | MOCK-204 | 204        | REVERSADA         |
+      | MOCK-100 | 100        | FALLIDA_NEGOCIO   |
+      | MOCK-300 | 300        | FALLIDA_TECNICA   |
+      | MOCK-600 | 600        | FALLIDA_ENTIDAD   |
+      | MOCK-700 | 700        | FALLIDA_GENERAL   |
+      | MOCK-900 | 900        | PENDIENTE         |
+      | MOCK-901 | 901        | TIMEOUT           |
