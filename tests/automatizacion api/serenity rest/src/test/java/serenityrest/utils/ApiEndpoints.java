@@ -28,7 +28,7 @@ public final class ApiEndpoints {
     private ApiEndpoints() {}
 
     // ── URL base — host compartido de todos los endpoints Everest/Aval ────────
-    public static final String API_BASE_URL = "https://api.aval.nttdatacolombia.com";
+    public static final String API_BASE_URL = "https://d2q3sea1wnkwiy.cloudfront.net";
 
     // ── Pagos — endpoints bajo /api/v1/pagos/ ─────────────────────────────────
     /**

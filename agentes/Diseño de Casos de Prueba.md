@@ -10,7 +10,7 @@ NOMBRE DEL PROYECTO    : Everest — Automatización API Grupo Aval
 DESCRIPCION            : API de transacciones bancarias ATM del proyecto Everest (Grupo Aval).
                          Gestiona retiro de efectivo (OTP), depósitos, recaudo de convenios y
                          pago de obligaciones / Tarjeta de Crédito Aval mediante endpoints REST.
-URL BASE API           : https://api.aval.nttdatacolombia.com
+URL BASE API           : https://d2q3sea1wnkwiy.cloudfront.net
 AUTENTICACION          : Bearer Token + headers de contexto bancario (X-RqUID, X-Channel, etc.)
 FORMATO RESPUESTA      : JSON
 MODULOS/RECURSOS       :
