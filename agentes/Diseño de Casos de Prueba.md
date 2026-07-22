@@ -20,6 +20,16 @@ MODULOS/RECURSOS       :
                                                        1º POST /everest/orq/consultas/api/v1/consulta
                                                        2º POST /api/v1/pagos/pago-factura
   TX-04  Pago de obligaciones y TC Aval (Efectivo)   FLUJO DOS PASOS (igual que TX-03)
+CODIGOS_RESPUESTA      :
+  codigo_estado_banco | estado_corporativo
+  200                | EXITOSA
+  204                | REVERSADA
+  100                | FALLIDA_NEGOCIO
+  300                | FALLIDA_TECNICA
+  600                | FALLIDA_ENTIDAD
+  700                | FALLIDA_GENERAL
+  900                | PENDIENTE
+  901                | TIMEOUT
 HERRAMIENTA DE AUTO    : Serenity BDD + REST Assured + Cucumber (Screenplay Pattern)
 RUTA DE AUTOMATIZACION : tests/automatizacion api/serenity rest/
 PLANTILLA EXCEL        : casos de prueba/plantilla_base.xlsx
