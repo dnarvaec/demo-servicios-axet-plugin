@@ -46,15 +46,22 @@ public final class ApiEndpoints {
          *  X-RqUID incremental: 002001 */
         public static final String DEPOSITO      = "/api/v1/pagos/deposito";
 
+
+        /** TX-03 paso 2 / TX-04 paso 2 — Pago de factura / convenios / TC Aval.
+         *  POST https://api.aval.nttdatacolombia.com/api/v1/pagos/pago-factura
+         *  X-RqUID incremental: 003001 (recaudo) | 004001 (pago oblig.) */
+        public static final String PAGO_FACTURA  = "/api/v1/pagos/pago-factura";
+
         /** TX-03 paso 2 — Pago de factura / convenios (Efectivo).
          *  POST https://api.aval.nttdatacolombia.com/api/v1/pagos/pago-factura
          *  X-RqUID incremental: 003001 (recaudo) */
-        public static final String PAGO_FACTURA      = "/api/v1/pagos/pago-factura";
+        
 
         /** TX-04 — Pago de obligaciones y TC Aval (Efectivo).
          *  POST https://api.aval.nttdatacolombia.com/api/v1/pagos/pago-obligaciones
          *  X-RqUID incremental: 004001 */
         public static final String PAGO_OBLIGACIONES = "/api/v1/pagos/pago-obligaciones";
+        
     }
 
     // ── Consultas — endpoint orquestador bajo /everest/orq/consultas/ ─────────
@@ -64,9 +71,12 @@ public final class ApiEndpoints {
      * TX-04 NO usa este endpoint — es un endpoint directo: Pagos.PAGO_OBLIGACIONES.
      */
     public static final class Consultas {
-        /** TX-03 paso 1 — Consulta de factura (orquestador Everest).
+
+        /** TX-03 paso 1 / TX-04 paso 1 — Consulta de factura (orquestador Everest).
          *  POST https://api.aval.nttdatacolombia.com/everest/orq/consultas/api/v1/consulta
-         *  Se ejecuta SIEMPRE antes de Pagos.PAGO_FACTURA en el flujo TX-03. */
+         *  Se ejecuta SIEMPRE antes de los Pagos.PAGO_FACTURA. */
+
+
         public static final String CONSULTA_FACTURA = "/everest/orq/consultas/api/v1/consulta";
     }
 

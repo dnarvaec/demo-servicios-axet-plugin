@@ -30,6 +30,26 @@ MODULOS/RECURSOS       :
                                                        1º POST /everest/orq/consultas/api/v1/consulta
                                                        2º POST /api/v1/pagos/pago-factura
                                                           X-RqUID incremental: 003001
+
+       MOCK DE ESTADOS PARA EL ENDPOINT DE CONSULTA:
+       El campo TrnRqUID del body controla el estado funcional retornado.
+
+       TrnRqUID   StatusCode   StatusDesc
+       MOCK-204   204          REVERSADA
+       MOCK-100   100          FALLIDA_NEGOCIO
+       MOCK-300   300          FALLIDA_TECNICA
+       MOCK-600   600          FALLIDA_ENTIDAD
+       MOCK-700   700          FALLIDA_GENERAL
+       MOCK-900   900          PENDIENTE
+       MOCK-901   901          TIMEOUT
+
+       IMPORTANTE:
+       - Diferenciar siempre el HTTP Status Code del campo StatusCode del JSON.
+       - No asumir que StatusCode representa el estado HTTP.
+       - Validar mediante ejecución real si el endpoint conserva HTTP 200.
+       - En los escenarios negativos, modificar exclusivamente TrnRqUID,
+         manteniendo los demás datos válidos y constantes.
+
   TX-04  Pago de obligaciones y TC Aval (Efectivo)   FLUJO DOS PASOS (mismo que TX-03):
                                                        1º POST /everest/orq/consultas/api/v1/consulta
                                                        2º POST /api/v1/pagos/pago-factura
@@ -42,31 +62,11 @@ NOTAS ESPECIALES       :
   - Header X-Channel típico: "ATM" para pagos, "CBV" para consultas
   - Header X-CompanyId típico: "BANCO_BOGOTA" para pagos, "00010016" para consultas
   - Body principal siempre lleva: "banco", "operacion" y el objeto de operación específico
-
-CONFIGURACION BD       :
-  - Los scripts del proyecto deben incluir variables de configuración que apunten a una BD
-    (host, puerto, schema, usuario, contraseña), definidas en DatabaseConfig.java o en
-    serenity.conf, bajo una sección centralizada y compartida por todas las TX.
-  - El apuntamiento de la BD debe poder cambiarse desde esa configuración centralizada
-    sin necesidad de modificar los scripts individuales de cada transacción.
-  - ESTADO ACTUAL: la automatización NO consume base de datos directamente.
-    No existe integración real con BD en este momento.
-  - PROHIBIDO: No inventar consultas SQL, validaciones JDBC ni aserciones contra BD
-    mientras no exista integración real configurada y activa en el proyecto.
-
-CODIGOS HTTP OFICIALES :  (catálogo definitivo del proyecto Everest — no reinterpretar)
-  200 = EXITOSA
-  204 = REVERSADA
-  100 = FALLIDA_NEGOCIO
-  300 = FALLIDA_TECNICA
-  600 = FALLIDA_ENTIDAD
-  700 = FALLIDA_GENERAL
-  900 = PENDIENTE
-  901 = TIMEOUT
-  Estos códigos son la FUENTE OFICIAL de validación del estado de la respuesta.
-  No deben normalizarse, sustituirse ni reinterpretarse por convenciones REST estándar.
-  Si la API responde con un código distinto al catálogo oficial, DETENTE y reporta la
-  inconsistencia al usuario — nunca la corrijas automáticamente.
+  - En TX-03 consultas, TrnRqUID controla la respuesta funcional del mock.
+  - Los valores MOCK-204, MOCK-100, MOCK-300, MOCK-600, MOCK-700,
+    MOCK-900 y MOCK-901 deben probarse como escenarios parametrizados.
+  - HTTP status y body.StatusCode son validaciones independientes.
+  - No confundir StatusCode=204 del JSON con HTTP 204.
 ```
 
 ## Tarjeta de Referencia Rápida
@@ -225,6 +225,58 @@ Cuando el usuario diga "automatiza la suite X" o "automatiza los casos de X":
 
 ---
 
+## Regla especial — TX-03 Consulta con respuestas controladas por TrnRqUID
+
+Cuando el usuario solicite automatizar escenarios de estados para TX-03:
+
+1. Reutilizar la Task existente de consulta si ya está implementada.
+2. No crear una Task por cada StatusCode.
+3. Parametrizar la Task o el builder de datos con el campo TrnRqUID.
+4. Crear un Scenario Outline con una fila por estado funcional.
+5. Mantener constantes todos los demás campos válidos del request.
+6. Validar independientemente:
+   - HTTP Status Code.
+   - StatusCode del body.
+   - StatusDesc del body.
+7. Para MOCK-901, medir y registrar el tiempo real de respuesta.
+8. Solo aplicar una aserción de timeout técnico si la ejecución real demuestra
+   que la conexión expira; de lo contrario, validar StatusCode=901 y
+   StatusDesc=TIMEOUT en el JSON.
+
+## Regla obligatoria para TX-03 — Matriz de estados del mock
+
+El endpoint POST /everest/orq/consultas/api/v1/consulta permite controlar
+el estado funcional retornado mediante el campo TrnRqUID del body.
+
+Matriz:
+
+| TrnRqUID | StatusCode | StatusDesc       |
+|----------|------------|------------------|
+| MOCK-204 | 204        | REVERSADA        |
+| MOCK-100 | 100        | FALLIDA_NEGOCIO  |
+| MOCK-300 | 300        | FALLIDA_TECNICA  |
+| MOCK-600 | 600        | FALLIDA_ENTIDAD  |
+| MOCK-700 | 700        | FALLIDA_GENERAL  |
+| MOCK-900 | 900        | PENDIENTE        |
+| MOCK-901 | 901        | TIMEOUT          |
+
+Reglas de implementación:
+
+1. Localizar el campo TrnRqUID en el payload real de consulta.
+2. Mantener válidos y constantes todos los demás campos.
+3. Parametrizar TestData y la Task de consulta para recibir TrnRqUID.
+4. Implementar los casos mediante un Scenario Outline.
+5. Ejecutar una petición real por cada valor de la matriz.
+6. Registrar separadamente HTTP Status Code y body.StatusCode.
+7. No interpretar StatusCode del body como HTTP Status Code.
+8. Validar body.StatusDesc contra la matriz.
+9. El valor MOCK-901 no implica automáticamente un timeout de conexión.
+   Primero se debe comprobar si el mock:
+   a. devuelve un JSON con StatusCode=901; o
+   b. provoca un timeout técnico real.
+10. No crear siete Tasks ni siete payloads duplicados.
+11. Ejecutar mvn verify sobre la suite completa y confirmar cero regresiones.   
+
 ## 3. Reglas de Inspección y Reutilización de Código
 
 ### 3.1 Inspección obligatoria del proyecto (Paso 0)
@@ -276,7 +328,18 @@ Antes de crear cualquier archivo, el agente DEBE ejecutar:
 
 ### 3.3 Protección de automatizaciones existentes
 
-**PROHIBICIÓN ABSOLUTA**: Nunca modificar una Task, Question o StepDefinition existente que ya es funcional.
+**PROHIBICIÓN ABSOLUTA**: No modificar destructivamente una automatización funcional.
+
+Se permite ampliar una Task, Question, TestData o StepDefinition existente cuando:
+
+- Se conserva el comportamiento anterior.
+- Se mantienen los métodos públicos existentes.
+- Se utilizan sobrecargas o nuevos métodos aditivos.
+- Se ejecuta la suite completa.
+- Se comprueba que existen cero regresiones.
+
+Está prohibido duplicar una Task únicamente para evitar ampliar de manera
+compatible una implementación existente.
 
 Todos los archivos son **aditivos**: solo se añade al final, nunca se modifica lo existente.
 
@@ -339,26 +402,6 @@ Todos los archivos son **aditivos**: solo se añade al final, nunca se modifica 
 - **Siempre `mvn verify`**: Con `mvn test` el reporte HTML no se genera.
 - **Acentos en step defs**: Usar escape Unicode en anotaciones Java (`\u00ed` para `í`, `\u00f3` para `ó`).
 
-### 5.5 Códigos HTTP oficiales del proyecto Everest
-
-Los únicos códigos HTTP válidos para validar el estado de las respuestas son los definidos en el §0 (CODIGOS HTTP OFICIALES):
-
-| Código | Estado oficial  |
-|--------|-----------------|
-| 200    | EXITOSA         |
-| 204    | REVERSADA       |
-| 100    | FALLIDA_NEGOCIO |
-| 300    | FALLIDA_TECNICA |
-| 600    | FALLIDA_ENTIDAD |
-| 700    | FALLIDA_GENERAL |
-| 900    | PENDIENTE       |
-| 901    | TIMEOUT         |
-
-**Reglas de aplicación**:
-- Estos códigos son la **fuente oficial** de validación; no deben normalizarse ni sustituirse por convenciones REST estándar (ej: no asumir que 404 = "no encontrado" o que 500 = "error interno" si el proyecto define sus propios valores).
-- Los matchers `.statusCode(XXX)` en Serenity/REST Assured deben referenciar exclusivamente estos valores.
-- Si durante la exploración en vivo (`curl.exe`) o la ejecución de pruebas la API responde con un código **fuera de este catálogo**, el agente debe **DETENERSE** y reportar la inconsistencia al usuario en lugar de corregirla o normalizarla automáticamente.
-
 ---
 
 ## 6. Modos de ejecución
@@ -395,16 +438,50 @@ curl.exe -s -X GET "<api.baseUrl>/recurso" -H "Authorization: Bearer <token>" -H
 ```
 
 Documenta: URL completa, método HTTP, headers enviados, body de la petición, respuesta completa y código de estado.
-**Coteja el código de estado recibido contra el catálogo oficial del §0 (CODIGOS HTTP OFICIALES). Si el código recibido no figura en ese catálogo, DETENTE y reporta la inconsistencia al usuario antes de continuar.**
 
-A partir de la respuesta real, construir los matchers REST Assured usando exclusivamente los códigos del catálogo oficial del proyecto Everest:
+A partir de la respuesta real, construir los matchers REST Assured:
 
 ```java
 .then()
-    .statusCode(200)   // 200 = EXITOSA según catálogo oficial Everest
+    .statusCode(200)
     .body("id",    equalTo(1))
     .body("title", notNullValue());
 ```
+
+### 8.1 Validación especial para TX-03 — Estados controlados por TrnRqUID
+
+Para el endpoint:
+
+POST /everest/orq/consultas/api/v1/consulta
+
+el agente debe ejecutar una petición independiente por cada valor:
+
+- MOCK-204
+- MOCK-100
+- MOCK-300
+- MOCK-600
+- MOCK-700
+- MOCK-900
+- MOCK-901
+
+En cada ejecución debe registrar separadamente:
+
+1. HTTP Status Code real.
+2. Campo StatusCode del JSON.
+3. Campo StatusDesc del JSON.
+4. Tiempo de respuesta.
+5. Respuesta completa.
+6. Comportamiento especial del caso MOCK-901.
+
+Está prohibido asumir que el campo StatusCode del body corresponde al
+HTTP Status Code.
+
+Ejemplo de evidencia obligatoria:
+
+TrnRqUID       : MOCK-300
+HTTP Status    : 200
+Body.StatusCode: 300
+Body.StatusDesc: FALLIDA_TECNICA
 
 ---
 
@@ -456,7 +533,16 @@ Scenario: {Resumen}
 **Reglas de mapeo**:
 - Si `Accion` contiene el nombre de un endpoint ya cubierto → reutilizar la Task existente
 - Si `Datos` describe campos que no existen en `TestData.java` → añadir el builder correspondiente
-- Si `Resultado Esperado` contiene `HTTP XXX` → extraer el status code para el matcher `equalTo(XXX)`. El valor XXX debe corresponder al catálogo oficial del proyecto Everest (ver §0 CODIGOS HTTP OFICIALES). Si el Excel contiene un código fuera del catálogo, reportar la inconsistencia al usuario antes de generar el código.
+- Si `Resultado Esperado` contiene `HTTP XXX` → extraer el status code para el matcher `equalTo(XXX)`
+- Si Resultado Esperado contiene "HTTP XXX", validar el código HTTP real
+  usando TheResponse.statusCode().
+- Si Resultado Esperado contiene "StatusCode = XXX", validar el campo
+  StatusCode del JSON usando TheResponse.field("StatusCode").
+- Si Resultado Esperado contiene "StatusDesc = YYY", validar el campo
+  StatusDesc del JSON usando TheResponse.field("StatusDesc").
+- Nunca interpretar automáticamente StatusCode como código HTTP.
+- Para TX-03, si Datos contiene TrnRqUID = MOCK-XXX, construir el payload
+  conservando válidos los demás campos y modificando únicamente TrnRqUID.
 - Si `Resultado Esperado` contiene `campo "X" = "Y"` → añadir `.body("X", equalTo("Y"))` al matcher
 
 ### 9.3 Actualización del Excel tras la ejecución
