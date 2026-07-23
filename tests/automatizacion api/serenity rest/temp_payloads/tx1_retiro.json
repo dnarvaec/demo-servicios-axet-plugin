@@ -3,23 +3,55 @@
   "operacion": "RETIRO",
   "operacionobj": {
     "NetworkTrnInfo": {
-      "NetworkOwner": "string",
-      "OriginatorName": "string",
-      "OriginatorType": "string",
-      "TerminalId": "string",
-      "NetworkRefId": "string",
-      "TeminalSequence": "string",
-      "IncocredCode": "string",
-      "PostAddr": {"Addr1": "string", "StateProv": "string"}
+      "OriginatorName": "BMOB",
+      "OriginatorType": "021",
+      "TerminalId": "00BOG138",
+      "NetworkRefId": "7946",
+      "TeminalSequence": "6032",
+      "IncocredCode": "457896",
+      "PostAddr": {
+        "Addr1": "Direccion",
+        "StateProv": "2302"
+      }
     },
     "PartyAcctRelInfo": {
-      "DepAcctIdFrom": {"DepAcctId": {"AcctType": "string", "AcctKey": "string", "BankInfo": {"BankId": "string"}}},
-      "CardAcctIdFrom": {"CardAcctId": {"AcctId": "string"}}
+      "DepAcctIdFrom": {
+        "DepAcctId": {
+          "AcctType": "DDA",
+          "AcctKey": "4915110205551818=23121011339517000000"
+        }
+      },
+      "CardAcctIdFrom": {
+        "CardAcctId": {
+          "AcctId": "4915110205551818"
+        }
+      }
     },
-    "DepAcctId": {"AcctType": "string", "AcctKey": "string", "BankInfo": {"BankId": "string"}},
-    "ContactInfo": {"PhoneNum": {"PhoneType": "string", "Phone": "string"}},
-    "CurAmt": {"Amt": 0, "CurCode": "string"},
-    "Fee": {"CurAmt": {"Amt": 0, "CurCode": "string"}},
-    "OTPInfo": {"OtpType": "string", "OtpValue": "string"}
+    "DepAcctId": {
+      "AcctType": "DDA",
+      "BankInfo": {
+        "BankId": "00010016"
+      }
+    },
+    "ContactInfo": {
+      "PhoneNum": {
+        "PhoneType": "Celular",
+        "Phone": "3118451263"
+      }
+    },
+    "CurAmt": {
+      "Amt": 20000.00,
+      "CurCode": "COP"
+    },
+    "Fee": {
+      "CurAmt": {
+        "Amt": 1800.00,
+        "CurCode": "COP"
+      }
+    },
+    "OTPInfo": {
+      "OtpType": "OTP",
+      "OtpValue": "1245"
+    }
   }
 }

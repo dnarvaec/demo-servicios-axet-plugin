@@ -2,22 +2,38 @@
   "banco": "bbogota",
   "operacion": "CONSULTA_FACTURA",
   "obj_operacion": {
-    "netwokInfo": {"networkOwner": "7946", "networkRefId": "7946"},
-    "transaction": {"trnRqUID": "7946", "trnSrc": "BMOB", "terminalSequence": "4594971"},
-    "agreement": {
-      "agrmId": "7946",
-      "invoiceNum": "4915110000",
-      "expDt": "2020-06-24T16:05:45.314",
-      "cSPRefId": "12",
-      "depAcctId": {"acctId": "*****4207", "acctType": "CCA"}
+    "NetwokInfo": {
+      "NetworkOwner": "7946",
+      "NetworkRefId": "7946"
     },
-    "invoiceSender": {
-      "acctPayAcct": "1003214830",
-      "svcId": "0007",
-      "invSndrPmtInfo": {"posEntryMode": "010"},
-      "agrmType": "1"
+    "Transaction": {
+      "TrnRqUID": "MOCK100",
+      "TrnSrc": "BMOB",
+      "TerminalSequence": "4594971"
     },
-    "pspCity": {"cityId": "11001"},
-    "locationInfo": {"geoLocation": "KR 11 # 71 -73"}
+    "Agreement": {
+      "AgrmId": "7946",
+      "InvoiceNum": "123456789",
+      "ExpDt": "2020-06-24T16:05:45.314",
+      "CSPRefId": "12",
+      "DepAcctId": {
+        "AcctId": "*****4207",
+        "AcctType": "CCA"
+      }
+    },
+    "InvoiceSender": {
+      "AcctPayAcct": "1003214830",
+      "SvcId": "0007",
+      "InvSndrPmtInfo": {
+        "POSEntryMode": "010"
+      },
+      "AgrmType": "1"
+    },
+    "PSPCity": {
+      "CityId": "11001"
+    },
+    "LocationInfo": {
+      "GeoLocation": "KR 11 # 71 -73"
+    }
   }
 }
