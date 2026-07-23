@@ -1,8 +1,6 @@
 package serenityrest.utils;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -65,46 +63,7 @@ public final class TestData {
     }
 
     public static Map<String, Object> retiroOtpPayload() {
-        Map<String, Object> networkTrnInfo = map(
-            "OriginatorName",  "BMOB",
-            "OriginatorType",  "021",
-            "TerminalId",      "00BOG138",
-            "NetworkRefId",    "7946",
-            "TeminalSequence", "6032",
-            "IncocredCode",    "457896",
-            "PostAddr",        map("Addr1", "Direccion", "StateProv", "2302")
-        );
-
-        Map<String, Object> partyAcctRelInfo = map(
-            "DepAcctIdFrom",  map("DepAcctId",  map(
-                                  "AcctType", "DDA",
-                                  "AcctKey",  "4915110205551818=23121011339517000000")),
-            "CardAcctIdFrom", map("CardAcctId", map("AcctId", "4915110205551818"))
-        );
-
-        Map<String, Object> depAcctId = map(
-            "AcctType", "DDA",
-            "BankInfo", map("BankId", "00010016")
-        );
-
-        Map<String, Object> contactInfo = map(
-            "PhoneNum", map("PhoneType", "Celular", "Phone", "3118451263")
-        );
-
-        Map<String, Object> curAmt = map("Amt", 20000.00, "CurCode", "COP");
-        Map<String, Object> fee    = map("CurAmt", map("Amt", 1800.00, "CurCode", "COP"));
-        Map<String, Object> otpInfo = map("OtpType", "OTP", "OtpValue", "1245");
-
-        Map<String, Object> op = new HashMap<>();
-        op.put("NetworkTrnInfo",   networkTrnInfo);
-        op.put("PartyAcctRelInfo", partyAcctRelInfo);
-        op.put("DepAcctId",        depAcctId);
-        op.put("ContactInfo",      contactInfo);
-        op.put("CurAmt",           curAmt);
-        op.put("Fee",              fee);
-        op.put("OTPInfo",          otpInfo);
-
-        return map("banco", "BANCO_BOGOTA", "operacion", "RETIRO", "operacionobj", op);
+        return DataDrivenExcelReader.retiroPayload();
     }
 
     // =========================================================================
@@ -134,46 +93,7 @@ public final class TestData {
     }
 
     public static Map<String, Object> depositoPayload() {
-        Map<String, Object> networkTrnInfo = map(
-            "OriginatorName",  "BMOB",
-            "OriginatorType",  "010",
-            "TerminalId",      "00BOG138",
-            "NetworkRefId",    "7948",
-            "TeminalSequence", "603237",
-            "IncocredCode",    "184990",
-            "PostAddr",        map("Addr1", "Direccion 43", "StateProv", "2302")
-        );
-
-        Map<String, Object> partyAcctRelInfo = map(
-            "DepAcctIdFrom",  map("DepAcctId",  map(
-                                  "AcctType", "DDA",
-                                  "AcctKey",  "4473990520002999=99990000000000000000")),
-            "CardAcctIdFrom", map("CardAcctId", map("AcctId", "4473990520002999"))
-        );
-
-        Map<String, Object> depAcctId = map(
-            "AcctId",   "0015423459",
-            "AcctType", "DDA",
-            "BankInfo", map("BankId", "00010016")
-        );
-
-        Map<String, Object> contactInfo = map(
-            "PhoneNum", map("PhoneType", "Celular", "Phone", "3118451263")
-        );
-
-        Map<String, Object> curAmt = map("Amt", 20000.00, "CurCode", "COP");
-        Map<String, Object> fee    = map("CurAmt", map("Amt", 1800.00, "CurCode", "COP"));
-
-        Map<String, Object> op = new HashMap<>();
-        op.put("NetworkTrnInfo",   networkTrnInfo);
-        op.put("PartyAcctRelInfo", partyAcctRelInfo);
-        op.put("DepAcctId",        depAcctId);
-        op.put("ContactInfo",      contactInfo);
-        op.put("CurAmt",           curAmt);
-        op.put("Fee",              fee);
-        // Sin OTPInfo — DEPOSITO no requiere OTP
-
-        return map("banco", "BANCO_BOGOTA", "operacion", "DEPOSITO", "operacionobj", op);
+        return DataDrivenExcelReader.depositoPayload();
     }
 
     // =========================================================================
@@ -205,30 +125,7 @@ public final class TestData {
     }
 
     public static Map<String, Object> consultaFacturaPayload(String trnRqUID) {
-        Map<String, Object> agreement = map(
-            "AgrmId",    "7946",
-            "InvoiceNum","123456789",
-            "ExpDt",     "2020-06-24T16:05:45.314",
-            "CSPRefId",  "12",
-            "DepAcctId", map("AcctId", "*****4207", "AcctType", "CCA")
-        );
-
-        Map<String, Object> invoiceSender = map(
-            "AcctPayAcct",    "1003214830",
-            "SvcId",          "0007",
-            "InvSndrPmtInfo", map("POSEntryMode", "010"),
-            "AgrmType",       "1"
-        );
-
-        Map<String, Object> objOperacion = new HashMap<>();
-        objOperacion.put("NetwokInfo",    map("NetworkOwner", "7946", "NetworkRefId", "7946"));
-        objOperacion.put("Transaction",   map("TrnRqUID", "MOCK100", "TrnSrc", "BMOB", "TerminalSequence", "4594971"));
-        objOperacion.put("Agreement",     agreement);
-        objOperacion.put("InvoiceSender", invoiceSender);
-        objOperacion.put("PSPCity",       map("CityId", "11001"));
-        objOperacion.put("LocationInfo",  map("GeoLocation", "KR 11 # 71 -73"));
-
-        return map("banco", "bbogota", "operacion", "CONSULTA_FACTURA", "obj_operacion", objOperacion);
+        return DataDrivenExcelReader.consultaFacturaPayload(trnRqUID);
     }
 
     // =========================================================================
@@ -253,44 +150,7 @@ public final class TestData {
     }
 
     public static Map<String, Object> pagoFacturaPayload() {
-        List<Map<String, Object>> refInfoList = new ArrayList<>();
-        refInfoList.add(map("RefId", "10002795130011", "RefType", "Referencia3"));
-
-        Map<String, Object> transaction = new HashMap<>();
-        transaction.put("TrnRqUID",         "7946");
-        transaction.put("TrnSrc",           "BMOB");
-        transaction.put("TerminalSequence", "4595976");
-        transaction.put("RefInfo",          refInfoList);
-
-        Map<String, Object> agreement = map(
-            "NIE",       "12053337612",
-            "AgrmId",    "7946",
-            "InvoiceNum","4915110205551818=23121011339517000000",
-            "ExpDt",     "2020-06-24T20:21:03.314",
-            "DepAcctId", map("AcctId", "821004207", "AcctType", "CCA")
-        );
-
-        Map<String, Object> invoiceSender = map(
-            "AcctPayAcct",    "12053337612",
-            "InvSndrPmtInfo", map("POSEntryMode", "010"),
-            "SvcId",          "00007"
-        );
-
-        List<Map<String, Object>> acctBalList = new ArrayList<>();
-        acctBalList.add(map("Desc", "ValorPrincipal",  "CurAmt", map("Amt", 38020.00, "CurCode", "170")));
-        acctBalList.add(map("Desc", "ValorAdicional1", "CurAmt", map("Amt", 16520.00, "CurCode", "170")));
-
-        Map<String, Object> operacionobj = new HashMap<>();
-        operacionobj.put("NetwokInfo",    map("NetworkRefId", "7946", "NetworkOwner", "7946"));
-        operacionobj.put("Transaction",   transaction);
-        operacionobj.put("TotalCurAmt",   map("Amt", 10000.00, "CurCode", "170"));
-        operacionobj.put("Agreement",     agreement);
-        operacionobj.put("InvoiceSender", invoiceSender);
-        operacionobj.put("PSPCity",       map("CityId", "90025"));
-        operacionobj.put("LocationInfo",  map("GeoLocation", "KR 11 # 71 -73"));
-        operacionobj.put("AcctBal",       acctBalList);
-
-        return map("banco", "BANCO_BOGOTA", "operacion", "PAGO_FACTURA", "operacionobj", operacionobj);
+        return DataDrivenExcelReader.pagoFacturaPayload();
     }
 
     // =========================================================================
@@ -317,34 +177,7 @@ public final class TestData {
     }
 
     public static Map<String, Object> pagoObligacionPayload() {
-        Map<String, Object> networkTrnInfo = map(
-            "OriginatorName",  "BMOB",
-            "OriginatorType",  "021",
-            "TerminalId",      "00BOG138",
-            "NetworkRefId",    "7946",
-            "TeminalSequence", "6032",
-            "PostAddr",        map("Addr1", "Direccion", "StateProv", "2302")
-        );
-
-        Map<String, Object> loanPmtInfo = map(
-            "DepAcctIdFrom",     map("DepAcctId", map(
-                                     "AcctType", "DDA",
-                                     "AcctKey",  "4915110205551818=23121011339517000000")),
-            "DepAcctIdTo",       map("DepAcctId", map(
-                                     "AcctId",   "200000100000900591657949",
-                                     "BankInfo", map("BankId", "00010016"))),
-            "CurAmt",            map("Amt", 20000.00, "CurCode", "COP"),
-            "LoanPmtType",       "CCA",
-            "LoanPmtComplement", "7946",
-            "CardAcctIdFrom",    map("CardAcctId", map("AcctId", "4915110205551818"))
-        );
-
-        Map<String, Object> operacionobj = map(
-            "NetworkTrnInfo", networkTrnInfo,
-            "LoanPmtInfo",    loanPmtInfo
-        );
-
-        return map("banco", "BANCO_BOGOTA", "operacion", "PAGO_OBLIGACIONES", "operacionobj", operacionobj);
+        return DataDrivenExcelReader.pagoObligacionPayload();
     }
 
     // ── Utilidad: nombre único para datos de prueba ───────────────────────────
