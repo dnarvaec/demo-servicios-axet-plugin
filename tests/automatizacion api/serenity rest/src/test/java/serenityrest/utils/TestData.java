@@ -201,6 +201,10 @@ public final class TestData {
     }
 
     public static Map<String, Object> consultaFacturaPayload() {
+        return consultaFacturaPayload("7946");
+    }
+
+    public static Map<String, Object> consultaFacturaPayload(String trnRqUID) {
         Map<String, Object> agreement = map(
             "AgrmId",    "7946",
             "InvoiceNum","123456789",
