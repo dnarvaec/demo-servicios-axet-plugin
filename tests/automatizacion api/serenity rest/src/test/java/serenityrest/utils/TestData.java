@@ -20,14 +20,6 @@ public final class TestData {
 
     // ── Utilidad interna ──────────────────────────────────────────────────────
 
-    private static Map<String, Object> map(Object... pairs) {
-        Map<String, Object> m = new HashMap<>();
-        for (int i = 0; i < pairs.length; i += 2) {
-            m.put((String) pairs[i], pairs[i + 1]);
-        }
-        return m;
-    }
-
     private static Map<String, String> strMap(Object... pairs) {
         Map<String, String> m = new HashMap<>();
         for (int i = 0; i < pairs.length; i += 2) {

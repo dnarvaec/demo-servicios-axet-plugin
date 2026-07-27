@@ -127,11 +127,16 @@ public final class DataDrivenExcelReader {
 
     private static Row findDataRow(Sheet sheet, Map<Integer, String> headers, RequestType requestType) {
         Integer selectorColumn = selectorColumn(headers);
+        Row firstDataRow = null;
 
         for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
             Row row = sheet.getRow(rowIndex);
             if (row == null) {
                 continue;
+            }
+
+            if (firstDataRow == null && hasAnyPayloadValue(row, headers, null)) {
+                firstDataRow = row;
             }
 
             if (requestType.rowSelector == null) {
@@ -151,6 +156,10 @@ public final class DataDrivenExcelReader {
             if (requestType.rowSelector.equalsIgnoreCase(selectorValue)) {
                 return row;
             }
+        }
+
+        if (firstDataRow != null) {
+            return firstDataRow;
         }
 
         throw new IllegalStateException(
