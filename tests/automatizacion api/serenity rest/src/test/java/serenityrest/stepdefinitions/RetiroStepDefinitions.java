@@ -54,13 +54,13 @@ public class RetiroStepDefinitions {
     // ── Cuando ───────────────────────────────────────────────────────────────
 
     // Llamada REST directa — PROHIBIDO Tasks.instrumented() en API tests sin WebDriver
-    @Cuando("realiza un retiro de efectivo con OTP")
-    public void realizaRetiroConOtp() {
+    @Cuando("realiza un retiro de efectivo con OTP del caso {int}")
+    public void realizaRetiroConOtp(int caso) {
         actor.attemptsTo(
             Post.to(ApiEndpoints.Pagos.RETIRO)
                 .with(requestSpec -> requestSpec
                     .headers(TestData.retiroHeaders())
-                    .body(TestData.retiroOtpPayload()))
+                    .body(TestData.retiroOtpPayload(caso)))
         );
     }
 

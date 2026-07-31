@@ -19,6 +19,7 @@
 **/release.properties
 **/dependency-reduced-pom.xml
 **/.flattened-pom.xml
+**/mvn_output.txt
 
 # ============================================
 # Java

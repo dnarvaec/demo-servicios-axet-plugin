@@ -54,13 +54,13 @@ public class PagoObligacionStepDefinitions {
     // ── Cuando ───────────────────────────────────────────────────────────────
 
     // Llamada REST directa — PROHIBIDO Tasks.instrumented() en API tests sin WebDriver
-    @Cuando("realiza el pago de la obligaci\u00f3n TC Aval")
-    public void realizaElPagoDeLaObligacion() {
+    @Cuando("realiza el pago de la obligaci\u00f3n TC Aval del caso {int}")
+    public void realizaElPagoDeLaObligacion(int caso) {
         actor.attemptsTo(
             Post.to(ApiEndpoints.Pagos.PAGO_OBLIGACIONES)
                 .with(requestSpec -> requestSpec
                     .headers(TestData.pagoObligacionHeaders())
-                    .body(TestData.pagoObligacionPayload()))
+                    .body(TestData.pagoObligacionPayload(caso)))
         );
     }
 

@@ -54,13 +54,13 @@ public class DepositoStepDefinitions {
     // ── Cuando ───────────────────────────────────────────────────────────────
 
     // Llamada REST directa — PROHIBIDO Tasks.instrumented() en API tests sin WebDriver
-    @Cuando("realiza un dep\u00f3sito en efectivo")
-    public void realizaDepositoEnEfectivo() {
+    @Cuando("realiza un dep\u00f3sito en efectivo del caso {int}")
+    public void realizaDepositoEnEfectivo(int caso) {
         actor.attemptsTo(
             Post.to(ApiEndpoints.Pagos.DEPOSITO)
                 .with(requestSpec -> requestSpec
                     .headers(TestData.depositoHeaders())
-                    .body(TestData.depositoPayload()))
+                    .body(TestData.depositoPayload(caso)))
         );
     }
 

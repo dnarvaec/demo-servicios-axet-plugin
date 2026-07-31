@@ -21,7 +21,7 @@ import serenityrest.utils.TestData;
 
 /**
  * StepDefinitions — TX-03 Recaudo de convenios (Efectivo)
- * Flujo de dos pasos: ConsultarFactura → PagarFactura
+ * Flujo de dos pasos: consulta de factura (paso 1) → pago de factura (paso 2)
  *
  * Invariantes de red corporativa NTT:
  *   - RestAssured.useRelaxedHTTPSValidation() en @Before (proxy MITM)
@@ -55,13 +55,13 @@ public class RecaudoStepDefinitions {
     // ── Cuando — Paso 1: Consulta ─────────────────────────────────────────────
     // Llamada REST directa — PROHIBIDO Tasks.instrumented() en API tests sin WebDriver
 
-    @Cuando("consulta la factura del convenio TX-03")
-    public void consultaLaFacturaDelConvenio() {
+    @Cuando("consulta la factura del convenio TX-03 del caso {int}")
+    public void consultaLaFacturaDelConvenio(int caso) {
         actor.attemptsTo(
             Post.to(ApiEndpoints.Consultas.CONSULTA_FACTURA)
                 .with(requestSpec -> requestSpec
                     .headers(TestData.consultaFacturaHeaders("003001"))
-                    .body(TestData.consultaFacturaPayload()))
+                    .body(TestData.consultaFacturaPayload(caso)))
         );
     }
 
@@ -77,13 +77,13 @@ public class RecaudoStepDefinitions {
 
     // ── Cuando — Paso 2: Pago ─────────────────────────────────────────────────
 
-    @Cuando("realiza el pago de la factura del convenio")
-    public void realizaElPagoDeLaFactura() {
+    @Cuando("realiza el pago de la factura del convenio del caso {int}")
+    public void realizaElPagoDeLaFactura(int caso) {
         actor.attemptsTo(
             Post.to(ApiEndpoints.Pagos.PAGO_FACTURA)
                 .with(requestSpec -> requestSpec
                     .headers(TestData.pagoFacturaHeaders())
-                    .body(TestData.pagoFacturaPayload()))
+                    .body(TestData.pagoFacturaPayload(caso)))
         );
     }
 

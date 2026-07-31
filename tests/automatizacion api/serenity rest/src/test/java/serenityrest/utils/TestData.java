@@ -54,8 +54,8 @@ public final class TestData {
         );
     }
 
-    public static Map<String, Object> retiroOtpPayload() {
-        return DataDrivenExcelReader.retiroPayload();
+    public static Map<String, Object> retiroOtpPayload(int caso) {
+        return DataDrivenExcelReader.retiroPayload(caso);
     }
 
     // =========================================================================
@@ -84,8 +84,8 @@ public final class TestData {
         );
     }
 
-    public static Map<String, Object> depositoPayload() {
-        return DataDrivenExcelReader.depositoPayload();
+    public static Map<String, Object> depositoPayload(int caso) {
+        return DataDrivenExcelReader.depositoPayload(caso);
     }
 
     // =========================================================================
@@ -112,12 +112,17 @@ public final class TestData {
         );
     }
 
-    public static Map<String, Object> consultaFacturaPayload() {
-        return consultaFacturaPayload("7946");
+    public static Map<String, Object> consultaFacturaPayload(int caso) {
+        return DataDrivenExcelReader.consultaFacturaPayload(caso, "7946");
     }
 
+    /** Usado por escenarios no-happy-path donde trnRqUID es el selector MOCK-x (caso=1 como base). */
     public static Map<String, Object> consultaFacturaPayload(String trnRqUID) {
-        return DataDrivenExcelReader.consultaFacturaPayload(trnRqUID);
+        return DataDrivenExcelReader.consultaFacturaPayload(1, trnRqUID);
+    }
+
+    public static Map<String, Object> consultaFacturaPayload(int caso, String trnRqUID) {
+        return DataDrivenExcelReader.consultaFacturaPayload(caso, trnRqUID);
     }
 
     // =========================================================================
@@ -141,8 +146,8 @@ public final class TestData {
         );
     }
 
-    public static Map<String, Object> pagoFacturaPayload() {
-        return DataDrivenExcelReader.pagoFacturaPayload();
+    public static Map<String, Object> pagoFacturaPayload(int caso) {
+        return DataDrivenExcelReader.pagoFacturaPayload(caso);
     }
 
     // =========================================================================
@@ -168,8 +173,8 @@ public final class TestData {
         );
     }
 
-    public static Map<String, Object> pagoObligacionPayload() {
-        return DataDrivenExcelReader.pagoObligacionPayload();
+    public static Map<String, Object> pagoObligacionPayload(int caso) {
+        return DataDrivenExcelReader.pagoObligacionPayload(caso);
     }
 
     // ── Utilidad: nombre único para datos de prueba ───────────────────────────

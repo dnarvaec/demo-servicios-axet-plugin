@@ -13,14 +13,14 @@ NOMBRE DEL PROYECTO    : Everest — Automatización API Grupo Aval
 DESCRIPCION            : API de transacciones bancarias ATM del proyecto Everest (Grupo Aval).
                          Gestiona retiro de efectivo (OTP), depósitos, recaudo de convenios y
                          pago de obligaciones / Tarjeta de Crédito Aval mediante endpoints REST.
-URL BASE API (DEV)     : https://d2q3sea1wnkwiy.cloudfront.net  (actualizar también en serenity.conf y ApiEndpoints.java)
-URL BASE API (PROD)    : https://d2q3sea1wnkwiy.cloudfront.net
+URL BASE API           : https://d2q3sea1wnkwiy.cloudfront.net  (fuente única: ApiEndpoints.API_BASE_URL)
 AUTENTICACION          : Bearer Token (header Authorization) + conjunto de headers de contexto bancario:
                            X-Transaction-Id, X-RqUID, X-Channel, X-CompanyId, X-IPAddr,
                            X-NextDt, X-ClientDt, X-CustIdentType, X-CustIdentNum,
                            X-SessKey, X-Language, X-CustLoginId, X-IBM-Client-Id
 FORMATO RESPUESTA      : JSON
-DOCUMENTACION API      : Colección Postman "Everest Automatizacion" (4 requests)
+DOCUMENTACION API      : ver agentes/Análisis Colección Postman - Everest AVC.md (fuente única de
+                         endpoints, headers, estructura de body e inconsistencias detectadas)
 MODULOS/RECURSOS       :
   TX-01  Retiro de efectivo (OTP)                    POST /api/v1/pagos/retiro
                                                           X-RqUID incremental: 001001
@@ -31,17 +31,9 @@ MODULOS/RECURSOS       :
                                                        2º POST /api/v1/pagos/pago-factura
                                                           X-RqUID incremental: 003001
 
-       MOCK DE ESTADOS PARA EL ENDPOINT DE CONSULTA:
+       MOCK DE ESTADOS PARA EL ENDPOINT DE CONSULTA (TX-03/TX-04):
        El campo TrnRqUID del body controla el estado funcional retornado.
-
-       TrnRqUID   StatusCode   StatusDesc
-       MOCK-204   204          REVERSADA
-       MOCK-100   100          FALLIDA_NEGOCIO
-       MOCK-300   300          FALLIDA_TECNICA
-       MOCK-600   600          FALLIDA_ENTIDAD
-       MOCK-700   700          FALLIDA_GENERAL
-       MOCK-900   900          PENDIENTE
-       MOCK-901   901          TIMEOUT
+       Catálogo oficial completo: agentes/Análisis Colección Postman - Everest AVC.md §10
 
        IMPORTANTE:
        - Diferenciar siempre el HTTP Status Code del campo StatusCode del JSON.
@@ -63,8 +55,6 @@ NOTAS ESPECIALES       :
   - Header X-CompanyId típico: "BANCO_BOGOTA" para pagos, "00010016" para consultas
   - Body principal siempre lleva: "banco", "operacion" y el objeto de operación específico
   - En TX-03 consultas, TrnRqUID controla la respuesta funcional del mock.
-  - Los valores MOCK-204, MOCK-100, MOCK-300, MOCK-600, MOCK-700,
-    MOCK-900 y MOCK-901 deben probarse como escenarios parametrizados.
   - HTTP status y body.StatusCode son validaciones independientes.
   - No confundir StatusCode=204 del JSON con HTTP 204.
 ```
@@ -143,15 +133,18 @@ El análisis especulativo, simulado o teórico está estrictamente prohibido.
 
 ## 2. Patrón de Diseño Obligatorio: Screenplay Pattern
 
-### 2.1 Los cinco elementos del Screenplay
+### 2.1 Los cuatro elementos del Screenplay usados en este proyecto
 
 | Elemento | Clase | Responsabilidad |
 |----------|-------|-----------------|
-| **Actor** | `OnStage.theActorCalled("API Tester")` | Ejecuta las tareas |
+| **Actor** | `OnStage.theActorCalled("API Tester")` | Ejecuta las interacciones |
 | **Ability** | `CallTheApi` (factory de `CallAnApi`) | Capacidad de hacer llamadas HTTP |
-| **Task** | `GetUser`, `CreatePost`, `LoginUser` | Orquesta interacciones ("qué hace") |
-| **Interaction** | `Get`, `Post`, `Put`, `Delete`, `Patch` | Llamada HTTP real ("cómo lo hace") |
+| **Interaction** | `Get`, `Post`, `Put`, `Delete`, `Patch` | Llamada HTTP real, invocada directamente desde `actor.attemptsTo()` en el `@Cuando` |
 | **Question** | `TheResponse` | Extrae datos de la respuesta para aserciones |
+
+> Nota: el elemento **Task** existe en la teoría de Screenplay pero **no se usa en
+> este proyecto** — las Interactions se llaman directamente desde el StepDefinition
+> (ver §2.3). No crear clases Task salvo pedido explícito del usuario.
 
 ### 2.2 Estructura fija del proyecto
 
@@ -166,10 +159,6 @@ tests/Automatizacion api/serenity rest/
     │   ├── screenplay/
     │   │   ├── abilities/
     │   │   │   └── CallTheApi.java
-    │   │   ├── tasks/
-    │   │   │   └── {recurso}/          # Una Task por operación de negocio
-    │   │   ├── interactions/
-    │   │   │   └── ApiRequest.java
     │   │   └── questions/
     │   │       └── TheResponse.java
     │   ├── stepdefinitions/
@@ -183,12 +172,16 @@ tests/Automatizacion api/serenity rest/
         └── serenity.conf
 ```
 
-### 2.3 Regla de nomenclatura de Tasks
+### 2.3 Patrón validado — Interaction directa (sin capa Task)
 
-- Una Task por operación de negocio: `GetPost`, `CreatePost`, `UpdatePost`, `DeletePost`
-- Factory method descriptivo: `GetPost.withId(1)`, `CreatePost.withTitle("Demo")`
-- La Task NO hace aserciones — solo ejecuta la llamada HTTP
-- Las aserciones SIEMPRE van en el Step Definition usando `TheResponse`
+- Este proyecto **no usa clases Task**. Las Interactions de `serenity-screenplay-rest`
+  (`Post.to(...)`, `Get.resource(...)`, etc.) se llaman **directamente** desde
+  `actor.attemptsTo(...)` dentro del método `@Cuando` del StepDefinition.
+- Un método `@Cuando` por operación de negocio: `realizaRetiroConOtp`, `realizaDepositoEnEfectivo`.
+- La Interaction NO hace aserciones — solo ejecuta la llamada HTTP.
+- Las aserciones SIEMPRE van en el mismo Step Definition usando `TheResponse`.
+- No crear clases Task nuevas salvo que el usuario lo pida explícitamente para
+  reutilizar la misma secuencia de Interactions en múltiples StepDefinitions.
 
 ### 2.4 Flujo único de trabajo
 
@@ -199,8 +192,9 @@ Cuando el usuario diga "automatiza X" refiriéndose a un endpoint o TX:
 1. Leer **§0 Contexto del Proyecto** → entender el dominio
 2. Inspeccionar el proyecto (§3.1)
 3. Explorar el endpoint con `curl.exe` → capturar respuesta real y derivar matchers
-4. Si la Task no existe → crear `screenplay/tasks/{recurso}/{NombreTask}.java`
-5. Añadir métodos `@When`/`@Then` al `{Recurso}StepDefinitions.java` existente (o crear si es recurso nuevo)
+4. Añadir la Interaction REST directamente en un nuevo método `@Cuando` del
+   `{Recurso}StepDefinitions.java` existente (patrón validado — sin capa Task)
+5. Crear `{Recurso}StepDefinitions.java` si el recurso es nuevo
 6. Añadir scenario en `features/{recurso}/{recurso}.feature`
 7. Ejecutar `mvn verify` → verificar living documentation → entregar
 
@@ -214,7 +208,7 @@ Cuando el usuario diga "automatiza la suite X" o "automatiza los casos de X":
 4. Por cada caso filtrado, ejecutar el **Modo A** usando los datos de las columnas:
    - `Resumen` → nombre del `Scenario:` en el `.feature`
    - `Escenario` → línea `Given` del scenario Gherkin
-   - `Accion` → línea `When` + nombre de la Task a crear/reutilizar
+   - `Accion` → línea `When` + Interaction REST a añadir/reutilizar en el StepDefinition
    - `Datos` → payload a registrar o reutilizar en `TestData.java`
    - `Resultado Esperado` → línea `Then` + matcher HTTP status + JSON path
 5. Agrupar los scenarios por recurso/endpoint en el `.feature` correspondiente
@@ -229,9 +223,9 @@ Cuando el usuario diga "automatiza la suite X" o "automatiza los casos de X":
 
 Cuando el usuario solicite automatizar escenarios de estados para TX-03:
 
-1. Reutilizar la Task existente de consulta si ya está implementada.
-2. No crear una Task por cada StatusCode.
-3. Parametrizar la Task o el builder de datos con el campo TrnRqUID.
+1. Reutilizar el método `@Cuando` existente de consulta en `RecaudoStepDefinitions` si ya está implementado.
+2. No crear un método `@Cuando` por cada StatusCode.
+3. Parametrizar el método `@Cuando` o el builder de datos (`TestData`) con el campo TrnRqUID.
 4. Crear un Scenario Outline con una fila por estado funcional.
 5. Mantener constantes todos los demás campos válidos del request.
 6. Validar independientemente:
@@ -248,23 +242,13 @@ Cuando el usuario solicite automatizar escenarios de estados para TX-03:
 El endpoint POST /everest/orq/consultas/api/v1/consulta permite controlar
 el estado funcional retornado mediante el campo TrnRqUID del body.
 
-Matriz:
-
-| TrnRqUID | StatusCode | StatusDesc       |
-|----------|------------|------------------|
-| MOCK-204 | 204        | REVERSADA        |
-| MOCK-100 | 100        | FALLIDA_NEGOCIO  |
-| MOCK-300 | 300        | FALLIDA_TECNICA  |
-| MOCK-600 | 600        | FALLIDA_ENTIDAD  |
-| MOCK-700 | 700        | FALLIDA_GENERAL  |
-| MOCK-900 | 900        | PENDIENTE        |
-| MOCK-901 | 901        | TIMEOUT          |
+Matriz: catálogo oficial en agentes/Análisis Colección Postman - Everest AVC.md §10.
 
 Reglas de implementación:
 
 1. Localizar el campo TrnRqUID en el payload real de consulta.
 2. Mantener válidos y constantes todos los demás campos.
-3. Parametrizar TestData y la Task de consulta para recibir TrnRqUID.
+3. Parametrizar TestData y el método `@Cuando` de consulta para recibir TrnRqUID.
 4. Implementar los casos mediante un Scenario Outline.
 5. Ejecutar una petición real por cada valor de la matriz.
 6. Registrar separadamente HTTP Status Code y body.StatusCode.
@@ -274,7 +258,7 @@ Reglas de implementación:
    Primero se debe comprobar si el mock:
    a. devuelve un JSON con StatusCode=901; o
    b. provoca un timeout técnico real.
-10. No crear siete Tasks ni siete payloads duplicados.
+10. No crear siete métodos `@Cuando` ni siete payloads duplicados.
 11. Ejecutar mvn verify sobre la suite completa y confirmar cero regresiones.   
 
 ## 3. Reglas de Inspección y Reutilización de Código
@@ -284,8 +268,8 @@ Reglas de implementación:
 Antes de crear cualquier archivo, el agente DEBE ejecutar:
 
 ```
-1. list_dir  → tests/Automatizacion api/serenity rest/src/test/java/serenityrest/screenplay/tasks/
-              (auditar Tasks existentes por recurso)
+1. list_dir  → tests/Automatizacion api/serenity rest/src/test/java/serenityrest/stepdefinitions/
+              (auditar métodos @Cuando/@Entonces existentes por recurso)
 
 2. list_dir  → tests/Automatizacion api/serenity rest/src/test/resources/features/
               (identificar features existentes)
@@ -308,10 +292,11 @@ Antes de crear cualquier archivo, el agente DEBE ejecutar:
 ### 3.2 Árbol de decisión: ¿crear o reutilizar?
 
 ```
-¿Existe una Task para la operación (GetPost, CreateUser, etc.)?
-├── SÍ → REUTILIZAR la Task existente en el Step Definition
-│         NUNCA crear una Task duplicada para la misma operación
-└── NO → Crear nueva Task en screenplay/tasks/{recurso}/{NombreTask}.java
+¿Existe un método @Cuando para la operación en el {Recurso}StepDefinitions.java?
+├── SÍ → REUTILIZAR el método @Cuando existente
+│         NUNCA duplicar un método @Cuando para la misma operación
+└── NO → Añadir nuevo método @Cuando que llame la Interaction (Post.to/Get.resource/etc.)
+          directamente desde actor.attemptsTo() — sin capa Task intermedia
 
 ¿Existe la feature del recurso?
 ├── SÍ → Abrir y AÑADIR scenario al final
@@ -322,7 +307,7 @@ Antes de crear cualquier archivo, el agente DEBE ejecutar:
 └── NO → Añadir nuevo método @When/@Then al StepDefinitions existente del recurso
 
 ¿Existe la URL/path en ApiEndpoints.java?
-├── SÍ → Usar la constante existente en la Task nueva
+├── SÍ → Usar la constante existente en el nuevo método @Cuando
 └── NO → Añadir la constante en la clase interna correspondiente de ApiEndpoints.java
 ```
 
@@ -330,7 +315,7 @@ Antes de crear cualquier archivo, el agente DEBE ejecutar:
 
 **PROHIBICIÓN ABSOLUTA**: No modificar destructivamente una automatización funcional.
 
-Se permite ampliar una Task, Question, TestData o StepDefinition existente cuando:
+Se permite ampliar una Question, TestData o StepDefinition existente cuando:
 
 - Se conserva el comportamiento anterior.
 - Se mantienen los métodos públicos existentes.
@@ -338,7 +323,7 @@ Se permite ampliar una Task, Question, TestData o StepDefinition existente cuand
 - Se ejecuta la suite completa.
 - Se comprueba que existen cero regresiones.
 
-Está prohibido duplicar una Task únicamente para evitar ampliar de manera
+Está prohibido duplicar un método `@Cuando` únicamente para evitar ampliar de manera
 compatible una implementación existente.
 
 Todos los archivos son **aditivos**: solo se añade al final, nunca se modifica lo existente.
@@ -351,12 +336,12 @@ Todos los archivos son **aditivos**: solo se añade al final, nunca se modifica 
 ### 3.5 Checklist antes de cada tarea
 
 ```
-[ ] list_dir ejecutado en screenplay/tasks/ y features/
+[ ] list_dir ejecutado en stepdefinitions/ y features/
 [ ] grep_search ejecutado por nombre del recurso en *.feature y *StepDefinitions.java
 [ ] ApiEndpoints.java leído — constantes auditadas
 [ ] TestData.java leído — builders auditados
 [ ] TheResponse.java leído — Questions disponibles auditadas
-[ ] Ninguna Task, Question ni StepDefinition existente modificada
+[ ] Ningún método @Cuando/@Entonces, Question ni StepDefinition existente modificado destructivamente
 [ ] mvn verify ejecutado sobre la suite completa tras los cambios
 [ ] 0 regresiones confirmadas
 ```
@@ -419,9 +404,9 @@ El agente DEBE operar en uno de estos modos:
 Esta fase DEBE ejecutarse siempre primero:
 
 1. Leer **§0 Contexto del Proyecto** — entender dominio, URL base, autenticación y recursos
-2. `list_dir` → `screenplay/tasks/` y `features/`
+2. `list_dir` → `stepdefinitions/` y `features/`
 3. Revisar `pom.xml` — versiones Serenity y dependencias REST Assured
-4. Revisar `serenity.conf` — confirmar que `api.baseUrl` apunta al entorno correcto
+4. Revisar `ApiEndpoints.java` — confirmar que `API_BASE_URL` apunta al entorno correcto (fuente única)
 5. Comparar endpoints solicitados con cobertura existente
 
 ---
@@ -429,7 +414,7 @@ Esta fase DEBE ejecutarse siempre primero:
 ## 8. Fase de exploración de APIs en vivo
 
 **En Windows PowerShell usar `curl.exe`** (no `curl` que es alias de `Invoke-WebRequest`).
-La URL base se obtiene de **§0 Contexto del Proyecto** y de `serenity.conf → environments.dev.api.baseUrl`:
+La URL base se obtiene de `ApiEndpoints.API_BASE_URL` (fuente única) o del **§0 Contexto del Proyecto**:
 
 ```bash
 curl.exe -s -X GET "<api.baseUrl>/recurso" -H "Accept: application/json"
@@ -531,7 +516,7 @@ Scenario: {Resumen}
 ```
 
 **Reglas de mapeo**:
-- Si `Accion` contiene el nombre de un endpoint ya cubierto → reutilizar la Task existente
+- Si `Accion` contiene el nombre de un endpoint ya cubierto → reutilizar el método `@Cuando` existente
 - Si `Datos` describe campos que no existen en `TestData.java` → añadir el builder correspondiente
 - Si `Resultado Esperado` contiene `HTTP XXX` → extraer el status code para el matcher `equalTo(XXX)`
 - Si Resultado Esperado contiene "HTTP XXX", validar el código HTTP real
@@ -576,7 +561,7 @@ print("Excel actualizado con resultados de ejecución.")
 [ ] casos de prueba/X.xlsx leído con openpyxl
 [ ] Casos filtrados: solo Tipo de test = "Automatizado"
 [ ] Cada caso mapeado a un Scenario: en el .feature correspondiente
-[ ] Tasks reutilizadas o creadas según árbol de decisión §3.2
+[ ] Métodos @Cuando reutilizados o creados según árbol de decisión §3.2
 [ ] TestData.java actualizado con builders de los nuevos Datos
 [ ] mvn verify ejecutado — 100% de éxito
 [ ] Columna "Resultado Final" actualizada en el Excel (Pass/Fail)

@@ -7,7 +7,7 @@ package serenityrest.utils;
  * NUNCA hardcodear URLs en Tasks, Interactions ni Step Definitions.
  *
  * PROYECTO : Everest — Automatización API Grupo Aval
- * HOST     : https://api.aval.nttdatacolombia.com
+ * HOST     : ver API_BASE_URL más abajo (única fuente; no duplicar el valor en comentarios)
  *
  * Transacciones cubiertas:
  *   TX-01  Retiro de efectivo (OTP)               X-RqUID: 001001
@@ -37,28 +37,28 @@ public final class ApiEndpoints {
      */
     public static final class Pagos {
         /** TX-01 — Retiro de efectivo con OTP.
-         *  POST https://api.aval.nttdatacolombia.com/api/v1/pagos/retiro
+         *  POST {API_BASE_URL}/api/v1/pagos/retiro
          *  X-RqUID incremental: 001001 */
         public static final String RETIRO        = "/api/v1/pagos/retiro";
 
         /** TX-02 — Depósitos y consignaciones (Efectivo).
-         *  POST https://api.aval.nttdatacolombia.com/api/v1/pagos/deposito
+         *  POST {API_BASE_URL}/api/v1/pagos/deposito
          *  X-RqUID incremental: 002001 */
         public static final String DEPOSITO      = "/api/v1/pagos/deposito";
 
 
         /** TX-03 paso 2 / TX-04 paso 2 — Pago de factura / convenios / TC Aval.
-         *  POST https://api.aval.nttdatacolombia.com/api/v1/pagos/pago-factura
+         *  POST {API_BASE_URL}/api/v1/pagos/pago-factura
          *  X-RqUID incremental: 003001 (recaudo) | 004001 (pago oblig.) */
         public static final String PAGO_FACTURA  = "/api/v1/pagos/pago-factura";
 
         /** TX-03 paso 2 — Pago de factura / convenios (Efectivo).
-         *  POST https://api.aval.nttdatacolombia.com/api/v1/pagos/pago-factura
+         *  POST {API_BASE_URL}/api/v1/pagos/pago-factura
          *  X-RqUID incremental: 003001 (recaudo) */
         
 
         /** TX-04 — Pago de obligaciones y TC Aval (Efectivo).
-         *  POST https://api.aval.nttdatacolombia.com/api/v1/pagos/pago-obligaciones
+         *  POST {API_BASE_URL}/api/v1/pagos/pago-obligaciones
          *  X-RqUID incremental: 004001 */
         public static final String PAGO_OBLIGACIONES = "/api/v1/pagos/pago-obligaciones";
         
@@ -73,7 +73,7 @@ public final class ApiEndpoints {
     public static final class Consultas {
 
         /** TX-03 paso 1 / TX-04 paso 1 — Consulta de factura (orquestador Everest).
-         *  POST https://api.aval.nttdatacolombia.com/everest/orq/consultas/api/v1/consulta
+         *  POST {API_BASE_URL}/everest/orq/consultas/api/v1/consulta
          *  Se ejecuta SIEMPRE antes de los Pagos.PAGO_FACTURA. */
 
 

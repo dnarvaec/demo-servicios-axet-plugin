@@ -34,49 +34,56 @@ public final class DataDrivenExcelReader {
     private static final DataFormatter DATA_FORMATTER = new DataFormatter(Locale.US);
     private static final Pattern PATH_SEGMENT = Pattern.compile("([^\\[\\]]+)(?:\\[(\\d+)\\])?");
 
-    private static final Map<RequestType, Map<String, Object>> PAYLOADS = loadPayloads();
+    // Cache indexado por (RequestType, caso) — el número de caso es el selector maestro
+    private static final Map<RequestType, Map<Integer, Map<String, Object>>> ALL_PAYLOADS = loadAllPayloads();
 
     private DataDrivenExcelReader() {}
 
-    public static Map<String, Object> retiroPayload() {
-        return payloadFor(RequestType.RETIRO);
+    public static Map<String, Object> retiroPayload(int caso) {
+        return payloadFor(RequestType.RETIRO, caso);
     }
 
-    public static Map<String, Object> depositoPayload() {
-        return payloadFor(RequestType.DEPOSITO);
+    public static Map<String, Object> depositoPayload(int caso) {
+        return payloadFor(RequestType.DEPOSITO, caso);
     }
 
-    public static Map<String, Object> consultaFacturaPayload(String trnRqUID) {
-        Map<String, Object> payload = payloadFor(RequestType.CONSULTA_FACTURA);
+    public static Map<String, Object> consultaFacturaPayload(int caso, String trnRqUID) {
+        Map<String, Object> payload = payloadFor(RequestType.CONSULTA_FACTURA, caso);
         Map<String, Object> objOperacion = childMap(payload, "obj_operacion");
         Map<String, Object> transaction = childMap(objOperacion, "Transaction");
         transaction.put("TrnRqUID", trnRqUID);
         return payload;
     }
 
-    public static Map<String, Object> pagoFacturaPayload() {
-        return payloadFor(RequestType.PAGO_FACTURA);
+    public static Map<String, Object> pagoFacturaPayload(int caso) {
+        return payloadFor(RequestType.PAGO_FACTURA, caso);
     }
 
-    public static Map<String, Object> pagoObligacionPayload() {
-        return payloadFor(RequestType.PAGO_OBLIGACIONES);
+    public static Map<String, Object> pagoObligacionPayload(int caso) {
+        return payloadFor(RequestType.PAGO_OBLIGACIONES, caso);
     }
 
-    private static Map<String, Object> payloadFor(RequestType requestType) {
-        Map<String, Object> payload = PAYLOADS.get(requestType);
-        if (payload == null) {
+    private static Map<String, Object> payloadFor(RequestType requestType, int caso) {
+        Map<Integer, Map<String, Object>> byCase = ALL_PAYLOADS.get(requestType);
+        if (byCase == null) {
             throw new IllegalStateException("No existe payload configurado para " + requestType);
+        }
+        Map<String, Object> payload = byCase.get(caso);
+        if (payload == null) {
+            throw new IllegalStateException(
+                "No existe el caso " + caso + " para " + requestType + ". Casos disponibles: " + byCase.keySet()
+            );
         }
         return deepCopyMap(payload);
     }
 
-    private static Map<RequestType, Map<String, Object>> loadPayloads() {
-        EnumMap<RequestType, Map<String, Object>> payloads = new EnumMap<>(RequestType.class);
+    private static Map<RequestType, Map<Integer, Map<String, Object>>> loadAllPayloads() {
+        EnumMap<RequestType, Map<Integer, Map<String, Object>>> payloads = new EnumMap<>(RequestType.class);
 
         try (InputStream inputStream = Files.newInputStream(WORKBOOK_PATH);
              Workbook workbook = WorkbookFactory.create(inputStream)) {
             for (RequestType requestType : RequestType.values()) {
-                payloads.put(requestType, readPayload(workbook, requestType));
+                payloads.put(requestType, readAllPayloads(workbook, requestType));
             }
             return payloads;
         } catch (IOException exception) {
@@ -87,27 +94,53 @@ public final class DataDrivenExcelReader {
         }
     }
 
-    private static Map<String, Object> readPayload(Workbook workbook, RequestType requestType) {
+    private static Map<Integer, Map<String, Object>> readAllPayloads(Workbook workbook, RequestType requestType) {
         Sheet sheet = workbook.getSheet(requestType.sheetName);
         if (sheet == null) {
             throw new IllegalStateException("No existe la hoja '" + requestType.sheetName + "' en datadriven.xlsx");
         }
 
         Map<Integer, String> headers = headersOf(sheet.getRow(0));
-        Row dataRow = findDataRow(sheet, headers, requestType);
-        Map<String, Object> flattened = flattenedValues(headers, dataRow, requestType);
+        Integer casoCol = casoColumn(headers);
+        LinkedHashMap<Integer, Map<String, Object>> byCase = new LinkedHashMap<>();
 
-        if (flattened.isEmpty()) {
+        for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+            Row row = sheet.getRow(rowIndex);
+            if (row == null) {
+                continue;
+            }
+
+            // La hoja 'recaudo' trae consulta_factura y pago_factura en la misma fila,
+            // separados por prefijo de columna (no por fila) — filtrado en flattenedValues.
+            if (casoCol == null || cellText(row.getCell(casoCol)).isBlank()) {
+                continue;
+            }
+
+            int caso;
+            try {
+                caso = (int) Double.parseDouble(cellText(row.getCell(casoCol)));
+            } catch (NumberFormatException ignored) {
+                continue;
+            }
+
+            Map<String, Object> flattened = flattenedValues(headers, row, requestType);
+            if (flattened.isEmpty()) {
+                continue;
+            }
+
+            LinkedHashMap<String, Object> nested = new LinkedHashMap<>();
+            for (Map.Entry<String, Object> entry : flattened.entrySet()) {
+                putNestedValue(nested, entry.getKey(), entry.getValue());
+            }
+            byCase.put(caso, nested);
+        }
+
+        if (byCase.isEmpty()) {
             throw new IllegalStateException(
-                "No se encontraron columnas de request para " + requestType + " en la hoja " + requestType.sheetName
+                "No se encontraron filas con columna 'Caso' para " + requestType + " en la hoja '" + requestType.sheetName + "'"
             );
         }
-
-        LinkedHashMap<String, Object> nested = new LinkedHashMap<>();
-        for (Map.Entry<String, Object> entry : flattened.entrySet()) {
-            putNestedValue(nested, entry.getKey(), entry.getValue());
-        }
-        return nested;
+        return byCase;
     }
 
     private static Map<Integer, String> headersOf(Row headerRow) {
@@ -125,71 +158,13 @@ public final class DataDrivenExcelReader {
         return headers;
     }
 
-    private static Row findDataRow(Sheet sheet, Map<Integer, String> headers, RequestType requestType) {
-        Integer selectorColumn = selectorColumn(headers);
-        Row firstDataRow = null;
-
-        for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
-            Row row = sheet.getRow(rowIndex);
-            if (row == null) {
-                continue;
-            }
-
-            if (firstDataRow == null && hasAnyPayloadValue(row, headers, null)) {
-                firstDataRow = row;
-            }
-
-            if (requestType.rowSelector == null) {
-                if (hasAnyPayloadValue(row, headers, null)) {
-                    return row;
-                }
-                continue;
-            }
-
-            if (selectorColumn == null) {
-                throw new IllegalStateException(
-                    "La hoja '" + requestType.sheetName + "' requiere una columna tipo_request"
-                );
-            }
-
-            String selectorValue = cellText(row.getCell(selectorColumn));
-            if (requestType.rowSelector.equalsIgnoreCase(selectorValue)) {
-                return row;
-            }
-        }
-
-        if (firstDataRow != null) {
-            return firstDataRow;
-        }
-
-        throw new IllegalStateException(
-            "No se encontró una fila para " + requestType + " en la hoja '" + requestType.sheetName + "'"
-        );
-    }
-
-    private static Integer selectorColumn(Map<Integer, String> headers) {
+    private static Integer casoColumn(Map<Integer, String> headers) {
         for (Map.Entry<Integer, String> header : headers.entrySet()) {
-            if ("tipo_request".equalsIgnoreCase(header.getValue())) {
+            if ("caso".equalsIgnoreCase(header.getValue())) {
                 return header.getKey();
             }
         }
         return null;
-    }
-
-    private static boolean hasAnyPayloadValue(Row row, Map<Integer, String> headers, String prefix) {
-        for (Map.Entry<Integer, String> entry : headers.entrySet()) {
-            String header = entry.getValue();
-            if ("tipo_request".equalsIgnoreCase(header)) {
-                continue;
-            }
-            if (prefix != null && !header.startsWith(prefix + ".")) {
-                continue;
-            }
-            if (!cellText(row.getCell(entry.getKey())).isBlank()) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static Map<String, Object> flattenedValues(
@@ -201,7 +176,7 @@ public final class DataDrivenExcelReader {
 
         for (Map.Entry<Integer, String> entry : headers.entrySet()) {
             String header = entry.getValue();
-            if ("tipo_request".equalsIgnoreCase(header)) {
+            if ("tipo_request".equalsIgnoreCase(header) || "caso".equalsIgnoreCase(header)) {
                 continue;
             }
 

@@ -466,3 +466,28 @@ Flujo Recaudo:
 2. **[H-03/H-04]** Headers `X-IPAddr: 677678` y `X-NextDt: 6756789` en PAGO_FACTURA son valores completamente inválidos
 3. **[I-01]** La clave del body `obj_operacion` en CONSULTA_FACTURA vs `operacionobj` en el resto puede causar errores si el API es sensible al nombre del campo
 4. **[I-02]** El typo `NetwokInfo` podría causar que el servidor no procese el bloque de red correctamente
+
+---
+
+## 10. Catálogo Oficial de Códigos de Estado (Fuente Única)
+
+> Esta tabla es la **única fuente de verdad** del proyecto Everest para el mapeo de
+> códigos de estado. Ningún otro archivo (agentes, `.feature`, Java, Excel) debe
+> redeclararla — solo referenciarla por sección (`§10`).
+
+| codigo_estado_banco | estado_corporativo | Se activa con (TX-03/TX-04, campo `TrnRqUID`) |
+|---|---|---|
+| 200 | EXITOSA | valor real de negocio (no MOCK) |
+| 204 | REVERSADA | `MOCK-204` |
+| 100 | FALLIDA_NEGOCIO | `MOCK-100` |
+| 300 | FALLIDA_TECNICA | `MOCK-300` |
+| 600 | FALLIDA_ENTIDAD | `MOCK-600` |
+| 700 | FALLIDA_GENERAL | `MOCK-700` |
+| 900 | PENDIENTE | `MOCK-900` |
+| 901 | TIMEOUT | `MOCK-901` |
+
+**Reglas de interpretación (no negociables):**
+- El HTTP Status Code y el campo `StatusCode` del body son validaciones **independientes**; uno nunca determina el otro.
+- Estos códigos son la fuente oficial — no se normalizan, sustituyen ni reinterpretan con convenciones REST estándar.
+- Si la API responde con un código fuera de este catálogo, se reporta la inconsistencia al usuario — nunca se corrige automáticamente.
+

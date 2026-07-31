@@ -20,44 +20,18 @@ MODULOS/RECURSOS       :
                                                        1º POST /everest/orq/consultas/api/v1/consulta
                                                        2º POST /api/v1/pagos/pago-factura
   TX-04  Pago de obligaciones y TC Aval (Efectivo)   FLUJO DOS PASOS (igual que TX-03)
-CODIGOS_RESPUESTA      :
-  codigo_estado_banco | estado_corporativo
-  200                | EXITOSA
-  204                | REVERSADA
-  100                | FALLIDA_NEGOCIO
-  300                | FALLIDA_TECNICA
-  600                | FALLIDA_ENTIDAD
-  700                | FALLIDA_GENERAL
-  900                | PENDIENTE
-  901                | TIMEOUT
+CODIGOS_RESPUESTA      : catálogo oficial en agentes/Análisis Colección Postman - Everest AVC.md §10
+                         (única fuente válida; no redeclarar aquí ni reinterpretar valores)
 HERRAMIENTA DE AUTO    : Serenity BDD + REST Assured + Cucumber (Screenplay Pattern)
 RUTA DE AUTOMATIZACION : tests/automatizacion api/serenity rest/
 PLANTILLA EXCEL        : casos de prueba/plantilla_base.xlsx
 SALIDA DE CASOS        : casos de prueba/{nombre_suite}.xlsx
 
 CONFIGURACION BD       :
-  - Los scripts del proyecto deben incluir variables de configuración que apunten a una BD
-    (host, puerto, schema, usuario, contraseña), gestionadas de forma centralizada y
-    compartida por todas las TX sin necesidad de modificar los scripts individuales.
-  - El apuntamiento de la BD debe poder cambiarse desde esa configuración centralizada.
   - ESTADO ACTUAL: la automatización NO consume base de datos directamente.
-    No existe integración real con BD en este momento.
-  - PROHIBIDO: No inventar consultas SQL, validaciones JDBC ni criterios de resultado
+    No existe integración real con BD en este proyecto (sin scaffolding pendiente).
+  - PROHIBIDO: no inventar consultas SQL, validaciones JDBC ni criterios de resultado
     contra BD mientras no exista integración real configurada y activa en el proyecto.
-
-CODIGOS HTTP OFICIALES :  (catálogo definitivo del proyecto Everest — no reinterpretar)
-  200 = EXITOSA
-  204 = REVERSADA
-  100 = FALLIDA_NEGOCIO
-  300 = FALLIDA_TECNICA
-  600 = FALLIDA_ENTIDAD
-  700 = FALLIDA_GENERAL
-  900 = PENDIENTE
-  901 = TIMEOUT
-  Estos códigos son la FUENTE OFICIAL de validación del estado de la respuesta.
-  No deben normalizarse, sustituirse ni reinterpretarse por convenciones REST estándar.
-  Si la API responde con un código distinto al catálogo oficial, reportar la
-  inconsistencia al usuario — nunca corregirla automáticamente.
 ```
 
 ---
@@ -123,7 +97,7 @@ La plantilla se encuentra en `casos de prueba/plantilla_base.xlsx`.
   - Ejemplo: `[TX-01] Retiro OTP - OTP inválido`
 - **Accion**: describir en lenguaje natural + especificar `POST /endpoint` con headers mínimos
 - **Datos**: listar solo los campos variables; los campos fijos van en Escenario
-- **Resultado Esperado**: comenzar siempre con **un único** HTTP status code del catálogo oficial del proyecto Everest (ver §0 CODIGOS HTTP OFICIALES). No usar códigos REST estándar ni dejar múltiples códigos alternativos para un mismo caso.
+- **Resultado Esperado**: comenzar siempre con **un único** HTTP status code del catálogo oficial del proyecto Everest (ver §0 CODIGOS_RESPUESTA). No usar códigos REST estándar ni dejar múltiples códigos alternativos para un mismo caso.
   - Ejemplo: `HTTP 200 (EXITOSA) | campo "status" no nulo`
   - Ejemplo: `HTTP 100 (FALLIDA_NEGOCIO) | campo "error" presente`
   - Ejemplo: `HTTP 300 (FALLIDA_TECNICA) | descripción del error presente`
@@ -311,7 +285,7 @@ El archivo generado se guarda en `casos de prueba/retiro_otp.xlsx`.
 [ ] ¿Los headers críticos (X-RqUID, Authorization) tienen casos negativos?
 [ ] ¿Los flujos de dos pasos (TX-03/TX-04) tienen casos del flujo completo?
 [ ] ¿Todos los casos "Automatizado" son expresables en Gherkin?
-[ ] ¿El Resultado Esperado incluye siempre el HTTP status code del catálogo oficial del proyecto Everest (§0 CODIGOS HTTP OFICIALES)?
+[ ] ¿El Resultado Esperado incluye siempre el HTTP status code del catálogo oficial del proyecto Everest (§0 CODIGOS_RESPUESTA)?
 [ ] ¿Los códigos HTTP usados en "Resultado Esperado" pertenecen al catálogo oficial (200/204/100/300/600/700/900/901)?
 [ ] ¿Los Issue ID son únicos y secuenciales?
 [ ] ¿El archivo se guardó en casos de prueba/{nombre_suite}.xlsx?

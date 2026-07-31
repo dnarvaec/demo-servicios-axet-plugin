@@ -10,7 +10,7 @@ Característica: TX-01 Retiro de efectivo con OTP
 
   @smoke @e2e
   Esquema del escenario: Retiro de efectivo con OTP - respuesta exitosa
-    Cuando realiza un retiro de efectivo con OTP
+    Cuando realiza un retiro de efectivo con OTP del caso <Caso>
     Entonces la transacción de retiro es exitosa con código "200"
     Y el campo endDt del retiro está presente
 
@@ -23,7 +23,7 @@ Característica: TX-01 Retiro de efectivo con OTP
 
   @e2e @validacion-estado
   Esquema del escenario: Retiro de efectivo - severidad Info confirmada
-    Cuando realiza un retiro de efectivo con OTP
+    Cuando realiza un retiro de efectivo con OTP del caso <Caso>
     Entonces la severidad del retiro es "Info"
 
     Ejemplos:
@@ -35,7 +35,7 @@ Característica: TX-01 Retiro de efectivo con OTP
 
   @e2e @validacion-mensaje
   Esquema del escenario: Retiro de efectivo - descripción transacción exitosa
-    Cuando realiza un retiro de efectivo con OTP
+    Cuando realiza un retiro de efectivo con OTP del caso <Caso>
     Entonces la descripción del retiro es "Transaccion exitosa"
 
     Ejemplos:
@@ -47,7 +47,7 @@ Característica: TX-01 Retiro de efectivo con OTP
 
   @e2e @flujo-completo
   Esquema del escenario: Retiro de efectivo - validación completa de respuesta
-    Cuando realiza un retiro de efectivo con OTP
+    Cuando realiza un retiro de efectivo con OTP del caso <Caso>
     Entonces la transacción de retiro es exitosa con código "200"
     Y la severidad del retiro es "Info"
     Y la descripción del retiro es "Transaccion exitosa"
