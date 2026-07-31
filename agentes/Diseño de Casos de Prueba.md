@@ -66,14 +66,17 @@ CODIGOS HTTP OFICIALES :  (catálogo definitivo del proyecto Everest — no rein
 
 **Principio fundamental**: Cobertura funcional completa antes de automatizar.
 
-**Flujo de trabajo obligatorio**:
+**Flujo de trabajo obligatorio** (diseño de casos):
 
 1. Leer el **§0 Contexto del Proyecto** y la HU/contexto recibido por prompt
 2. Identificar los flujos happy path, flujos alternos y casos negativos
 3. Generar los casos de prueba en la plantilla Excel siguiendo la estructura definida
 4. Clasificar cada caso como `Manual` o `Automatizado` según los criterios del §4
 5. Guardar el archivo en `casos de prueba/{nombre_suite}.xlsx`
-6. Presentar un resumen de cobertura al usuario
+6. Presentar el resumen de cobertura y **detenerse** — esperar revisión humana
+
+**La subida a Jira es un modo separado.** El agente solo sube a Jira cuando el usuario
+lo pide explícitamente en un nuevo prompt (ver §11).
 
 **Nunca**:
 - Generar casos de prueba sin leer el contexto completo del §0
@@ -225,7 +228,7 @@ Para cada caso identificado:
   - Ejemplo: `casos de prueba/recaudo_convenios.xlsx`
 - El nombre de la suite debe ser descriptivo y en minúsculas con guiones bajos
 
-### Paso 5 — Presentar resumen
+### Paso 5 — Presentar resumen y detenerse
 Mostrar al usuario:
 ```
 Suite: {nombre_suite}.xlsx
@@ -238,7 +241,13 @@ Cobertura:
   - Validación headers: ✅
   - Casos negativos: ✅
   - Edge cases: ✅
+
+Próximo paso: revisa los casos. Cuando estén listos, dime "sube los casos a Jira"
+o "sube {nombre_suite} a Jira" para iniciar la subida.
 ```
+
+**El agente se detiene aquí.** No ejecutar `jira_uploader.py` salvo que el usuario
+lo solicite explícitamente en un prompt posterior.
 
 ---
 
@@ -306,7 +315,13 @@ El archivo generado se guarda en `casos de prueba/retiro_otp.xlsx`.
 [ ] ¿Los códigos HTTP usados en "Resultado Esperado" pertenecen al catálogo oficial (200/204/100/300/600/700/900/901)?
 [ ] ¿Los Issue ID son únicos y secuenciales?
 [ ] ¿El archivo se guardó en casos de prueba/{nombre_suite}.xlsx?
-[ ] ¿Se presentó el resumen de cobertura al usuario?
+[ ] ¿Se presentó el resumen de cobertura al usuario y el agente se detuvo a esperar revisión?
+
+--- (checklist de subida a Jira — solo al recibir petición explícita) ---
+[ ] ¿El usuario confirmó que los casos ya fueron revisados?
+[ ] ¿Se ejecutó jira_uploader.py con la ruta correcta del Excel?
+[ ] ¿El Excel tiene la columna «Jira Key» con las claves de los issues creados?
+[ ] ¿Se presentó el resumen de claves Jira al usuario?
 ```
 
 ---
@@ -318,3 +333,101 @@ Una vez generado el Excel, el usuario puede indicar al **Agente de Automatizaci�
 > *"Automatiza la suite `retiro_otp`"*
 
 El agente leerá `casos de prueba/retiro_otp.xlsx`, filtrará los casos `Automatizado`, y generará el código Serenity BDD correspondiente para cada uno, mapeando cada fila a un `Scenario:` en el archivo `.feature`.
+
+---
+
+## 11. Integración con Jira
+
+### 11.1 Archivos del sistema de integración
+
+| Archivo | Propósito |
+|---|---|
+| `.env` | Variables de entorno: credenciales y configuración Jira (raíz del proyecto) |
+| `jira_uploader.py` | Script Python reutilizable para subir casos al proyecto Jira |
+| `requirements.txt` | Dependencias Python: `openpyxl`, `requests`, `python-dotenv` |
+
+### 11.2 Configuración inicial (única vez)
+
+```bash
+# Instalar dependencias
+pip install -r requirements.txt
+
+# Editar .env con los valores reales del proyecto
+# JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN, JIRA_PROJECT_KEY
+```
+
+Para obtener el `JIRA_API_TOKEN` en Jira Cloud:
+1. Ir a **https://id.atlassian.com/manage-profile/security/api-tokens**
+2. Crear un nuevo token → copiar y pegar en `.env`
+
+### 11.3 Obtener IDs de custom fields (opcional)
+
+Si el proyecto Jira tiene campos personalizados para precondición, pasos, datos y resultado esperado, ejecutar:
+
+```bash
+curl -u tu-email:tu_api_token \
+  "https://tu-dominio.atlassian.net/rest/api/3/field" \
+  | python -m json.tool | findstr "customfield"
+```
+
+Copiar los IDs (`customfield_10XXX`) a las variables `JIRA_FIELD_*` en `.env`.
+
+### 11.4 Modo de subida a Jira (invocación explícita)
+
+Este modo se activa **únicamente** cuando el usuario lo pide en un prompt independiente, por ejemplo:
+
+> *"Sube los casos a Jira"*  
+> *"Sube la suite retiro_otp a Jira"*  
+> *"Ya revisé los casos, publícalos en Jira"*
+
+Cuando el agente detecte esa intención, ejecutar el uploader con la suite indicada
+(o la última suite generada en la conversación si no se especifica nombre):
+
+```python
+from jira_uploader import subir_casos_a_jira
+
+claves = subir_casos_a_jira("casos de prueba/{nombre_suite}.xlsx")
+if claves:
+    print("\nIssues Jira creados:")
+    for issue_id, key in claves.items():
+        print(f"  [{issue_id}] → {key}")
+```
+
+El uploader añade la columna **«Jira Key»** al Excel y lo guarda.
+
+### 11.5 Formato de la descripción en Jira
+
+Cuando **no** se configuran custom fields, todos los datos del caso se consolidan en la descripción del issue con este formato:
+
+```
+### Descripción
+<Descripcion>
+
+### Precondición / Escenario
+<Escenario>
+
+### Acción / Pasos
+<Accion>
+
+### Datos de Prueba
+<Datos>
+
+### Resultado Esperado
+<Resultado Esperado>
+```
+
+Con API v3 (Jira Cloud) se usa **Atlassian Document Format (ADF)**.
+Con API v2 (Jira Server / Data Center) se usa **wiki markup** (`h3.`).
+
+### 11.6 Resumen final al usuario (con claves Jira)
+
+Después del upload, presentar:
+```
+Suite    : {nombre_suite}.xlsx
+Casos    : X total  (Y automatizados / Z manuales)
+Jira     : X issues creados en proyecto {JIRA_PROJECT_KEY}
+  [1] → EV-101  [TX-01] Retiro OTP - Solicitud exitosa
+  [2] → EV-102  [TX-01] Retiro OTP - Sin header X-RqUID
+  ...
+Excel    : casos de prueba/{nombre_suite}.xlsx  (columna «Jira Key» actualizada)
+```
